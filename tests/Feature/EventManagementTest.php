@@ -24,7 +24,7 @@ final class EventManagementTest extends TestCase
 
     public function test_authenticated_user_can_view_events_page(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create(['role' => AccountRole::Admin]))
             ->get('/events')
             ->assertOk()
             ->assertSee('Add event')
@@ -33,7 +33,7 @@ final class EventManagementTest extends TestCase
 
     public function test_authenticated_user_can_create_an_event(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => AccountRole::Admin]);
 
         $response = $this->actingAs($user)->post('/events', [
             'event_name' => 'Regional Championship',
@@ -56,7 +56,7 @@ final class EventManagementTest extends TestCase
 
     public function test_other_scoring_system_requires_a_description(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create(['role' => AccountRole::Admin]))
             ->post('/events', [
                 'event_name' => 'Special Event',
                 'start_date' => '2026-10-01',
@@ -68,7 +68,7 @@ final class EventManagementTest extends TestCase
 
     public function test_end_date_cannot_be_before_start_date(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create(['role' => AccountRole::Admin]))
             ->post('/events', [
                 'event_name' => 'Invalid Event',
                 'start_date' => '2026-10-03',
@@ -80,7 +80,7 @@ final class EventManagementTest extends TestCase
 
     public function test_event_configuration_accepts_participants_categories_and_competitions(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => AccountRole::Admin]);
         $event = Event::factory()->for($user, 'creator')->create();
 
         $this->actingAs($user)
@@ -123,7 +123,9 @@ final class EventManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Jordan Reyes')
             ->assertSee('Senior Division')
-            ->assertSee('Solo Performance');
+            ->assertSee('Solo Performance')
+            ->assertSee('Current leaderboard')
+            ->assertSee('Enter scores');
     }
 
     public function test_category_from_another_event_cannot_receive_a_competition(): void
@@ -146,7 +148,7 @@ final class EventManagementTest extends TestCase
 
     public function test_leaderboard_can_be_frozen_and_unfrozen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => AccountRole::Admin]);
         $event = Event::factory()->for($user, 'creator')->create();
 
         $this->actingAs($user)

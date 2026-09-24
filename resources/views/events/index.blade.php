@@ -8,15 +8,17 @@
         <div>
             <p class="text-sm font-semibold text-maroon-700">Event management</p>
             <h2 class="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Your events</h2>
-            <p class="mt-2 text-sm text-slate-500">Create an event, then configure its participants, categories, and competitions.</p>
+            <p class="mt-2 text-sm text-slate-500">{{ auth()->user()->isAdmin() ? 'Create an event, then configure its participants, categories, and competitions.' : 'Open an event to manage participants, categories, contests, and scoring.' }}</p>
         </div>
 
-        <button id="open-event-dialog" type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white shadow-lg shadow-maroon-700/20 transition hover:bg-maroon-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-maroon-600/25">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-            </svg>
-            Add event
-        </button>
+        @if (auth()->user()->isAdmin())
+            <button id="open-event-dialog" type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white shadow-lg shadow-maroon-700/20 transition hover:bg-maroon-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-maroon-600/25">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+                </svg>
+                Add event
+            </button>
+        @endif
     </div>
 
     @if ($events->isEmpty())
@@ -27,8 +29,8 @@
                     <path d="M16 3v4M8 3v4M3 10h18" stroke-linecap="round" />
                 </svg>
             </span>
-            <h3 class="mt-5 text-lg font-semibold text-slate-950">No events yet</h3>
-            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Create your first event to begin adding participants, categories, and competitions.</p>
+            <h3 class="mt-5 text-lg font-semibold text-slate-950">No events available</h3>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{{ auth()->user()->isAdmin() ? 'Create your first event to begin adding participants, categories, and competitions.' : 'An administrator must create an event before it can be managed.' }}</p>
         </section>
     @else
         <section class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Events">
@@ -80,8 +82,14 @@
                     </div>
                     </a>
 
-                    @if (auth()->user()->isAdmin())
-                        <form method="POST" action="{{ route('events.destroy', $event) }}" class="border-t border-slate-100 px-6 py-3" data-loading-text="Deleting event…" onsubmit="return confirm('Delete this event? All participants, categories, contests, and scoring configurations will be permanently removed.')">
+                    <div class="flex items-center justify-between gap-3 border-t border-slate-100 px-6 py-3">
+                        <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-maroon-700 transition hover:bg-maroon-50 hover:text-maroon-900">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                            Current leaderboard
+                        </a>
+
+                        @if (auth()->user()->isAdmin())
+                        <form method="POST" action="{{ route('events.destroy', $event) }}" data-loading-text="Deleting event…" onsubmit="return confirm('Delete this event? All participants, categories, contests, and scoring configurations will be permanently removed.')">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-red-600/15">
@@ -91,12 +99,14 @@
                                 Delete event
                             </button>
                         </form>
-                    @endif
+                        @endif
+                    </div>
                 </article>
             @endforeach
         </section>
     @endif
 
+    @if (auth()->user()->isAdmin())
     <dialog id="event-dialog" class="m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/70">
         <form method="POST" action="{{ route('events.store') }}">
             @csrf
@@ -167,8 +177,10 @@
             </div>
         </form>
     </dialog>
+    @endif
 @endsection
 
+@if (auth()->user()->isAdmin())
 @push('scripts')
     <script>
         const eventDialog = document.getElementById('event-dialog');
@@ -203,3 +215,4 @@
         @endif
     </script>
 @endpush
+@endif

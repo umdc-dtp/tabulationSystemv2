@@ -8,6 +8,7 @@ use App\Enums\ScoringSystem;
 use App\Http\Requests\StoreEventRequest;
 use App\Models\Event;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -51,7 +52,9 @@ final class EventController extends Controller
         $event->load([
             'participants' => fn ($query) => $query->orderBy('name'),
             'categories' => fn ($query) => $query->orderBy('name'),
-            'categories.competitions' => fn ($query) => $query->orderBy('name'),
+            'categories.competitions' => fn ($query) => $query
+                ->withCount(['criteria', 'results'])
+                ->orderBy('name'),
         ]);
 
         return view('events.show', ['event' => $event]);
@@ -69,7 +72,7 @@ final class EventController extends Controller
             ->with('status', 'Event deleted successfully.');
     }
 
-    public function toggleLeaderboardFreeze(Event $event): RedirectResponse
+    public function toggleLeaderboardFreeze(Request $request, Event $event): RedirectResponse
     {
         $event->update([
             'leaderboard_frozen' => ! $event->leaderboard_frozen,
@@ -79,6 +82,12 @@ final class EventController extends Controller
             ? 'The public leaderboard has been frozen.'
             : 'The public leaderboard is live again.';
 
-        return to_route('events.show', $event)->with('status', $message);
+        $route = $request->string('redirect_to')->toString() === 'dashboard'
+            ? 'dashboard'
+            : 'events.show';
+
+        return $route === 'dashboard'
+            ? to_route($route)->with('status', $message)
+            : to_route($route, $event)->with('status', $message);
     }
 }

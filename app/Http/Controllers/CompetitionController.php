@@ -9,11 +9,16 @@ use App\Http\Requests\UpdateCompetitionScoringMethodRequest;
 use App\Models\Category;
 use App\Models\Competition;
 use App\Models\Event;
+use App\Services\CompetitionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 final class CompetitionController extends Controller
 {
+    public function __construct(
+        private readonly CompetitionManager $competitionManager,
+    ) {}
+
     public function store(
         StoreCompetitionRequest $request,
         Event $event,
@@ -59,5 +64,18 @@ final class CompetitionController extends Controller
             $category,
             $competition,
         ])->with('status', 'Contest scoring method updated successfully.');
+    }
+
+    public function destroy(
+        Event $event,
+        Category $category,
+        Competition $competition,
+    ): RedirectResponse {
+        $competitionName = $competition->name;
+
+        $this->competitionManager->delete($competition);
+
+        return to_route('events.show', $event)
+            ->with('status', "{$competitionName} was deleted successfully.");
     }
 }

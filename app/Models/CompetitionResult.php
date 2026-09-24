@@ -8,14 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class Criterion extends Model
+final class CompetitionResult extends Model
 {
-    protected $fillable = ['name', 'max_score'];
+    protected $fillable = ['participant_id', 'wins', 'deduction'];
 
     protected function casts(): array
     {
         return [
-            'max_score' => 'decimal:2',
+            'wins' => 'integer',
+            'deduction' => 'decimal:2',
         ];
     }
 
@@ -24,7 +25,12 @@ final class Criterion extends Model
         return $this->belongsTo(Competition::class);
     }
 
-    public function scores(): HasMany
+    public function participant(): BelongsTo
+    {
+        return $this->belongsTo(Participant::class);
+    }
+
+    public function criterionScores(): HasMany
     {
         return $this->hasMany(CriterionScore::class);
     }

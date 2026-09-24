@@ -30,23 +30,30 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <form method="POST" action="{{ route('events.leaderboard-freeze', $event) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" @class([
-                        'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30',
-                        'bg-white text-maroon-800 hover:bg-maroon-50' => ! $event->leaderboard_frozen,
-                        'bg-amber-300 text-amber-950 hover:bg-amber-200' => $event->leaderboard_frozen,
-                    ])>
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="5" y="11" width="14" height="10" rx="2" />
-                            <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke-linecap="round" />
-                        </svg>
-                        {{ $event->leaderboard_frozen ? 'Unfreeze leaderboard' : 'Freeze leaderboard' }}
-                    </button>
-                </form>
+                <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/30 bg-maroon-950/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Current leaderboard
+                </a>
 
                 @if (auth()->user()->isAdmin())
+                    <form method="POST" action="{{ route('events.leaderboard-freeze', $event) }}">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" @class([
+                            'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30',
+                            'bg-white text-maroon-800 hover:bg-maroon-50' => ! $event->leaderboard_frozen,
+                            'bg-amber-300 text-amber-950 hover:bg-amber-200' => $event->leaderboard_frozen,
+                        ])>
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <rect x="5" y="11" width="14" height="10" rx="2" />
+                                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke-linecap="round" />
+                            </svg>
+                            {{ $event->leaderboard_frozen ? 'Unfreeze leaderboard' : 'Freeze leaderboard' }}
+                        </button>
+                    </form>
+
                     <form method="POST" action="{{ route('events.destroy', $event) }}" data-loading-text="Deleting event…" onsubmit="return confirm('Delete this event? All event data will be permanently removed.')">
                         @csrf
                         @method('DELETE')
@@ -163,8 +170,8 @@
             <div class="border-b border-slate-200 px-6 py-5">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-semibold text-slate-950">Categories & contests</h3>
-                        <p class="mt-1 text-sm text-slate-500">Create contests, choose criteria- or wins-based scoring, then configure leaderboard points.</p>
+                        <h3 class="text-lg font-semibold text-slate-950">Categories</h3>
+                        <p class="mt-1 text-sm text-slate-500">Create divisions that will organize the contest cards below.</p>
                     </div>
                     <span class="rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon-700">{{ $event->categories->count() }}</span>
                 </div>
@@ -180,50 +187,116 @@
                 <button type="submit" class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Add category</button>
             </form>
 
-            <div class="space-y-4 p-5">
+            <div class="grid gap-3 p-5 sm:grid-cols-2">
                 @forelse ($event->categories as $category)
-                    <article class="rounded-xl border border-slate-200">
-                        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                            <h4 class="font-semibold text-slate-900">{{ $category->name }}</h4>
-                            <span class="text-xs text-slate-400">{{ $category->competitions->count() }} contests</span>
-                        </div>
-
-                        <div class="p-4">
-                            <form method="POST" action="{{ route('events.categories.competitions.store', [$event, $category]) }}" class="flex flex-col gap-2 sm:flex-row">
-                                @csrf
-                                <label for="competition_name_{{ $category->id }}" class="sr-only">Contest name for {{ $category->name }}</label>
-                                <input id="competition_name_{{ $category->id }}" name="competition_name" type="text" required class="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10" placeholder="Contest name">
-                                <button type="submit" class="h-10 rounded-lg border border-maroon-200 bg-maroon-50 px-4 text-sm font-semibold text-maroon-700 transition hover:bg-maroon-100">Add contest</button>
-                            </form>
-                            @error('competition_name')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
-
-                            @if ($category->competitions->isNotEmpty())
-                                <ul class="mt-4 space-y-2">
-                                    @foreach ($category->competitions as $competition)
-                                        <li class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
-                                            <span class="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700">
-                                                <span class="h-2 w-2 shrink-0 rounded-full bg-maroon-500"></span>
-                                                <span class="truncate">{{ $competition->name }}</span>
-                                                <span class="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-maroon-700 ring-1 ring-inset ring-maroon-100">{{ $competition->scoring_method->label() }}</span>
-                                            </span>
-                                            <a href="{{ route('events.categories.competitions.show', [$event, $category, $competition]) }}" class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-maroon-200 bg-white px-3 py-1.5 text-xs font-semibold text-maroon-700 transition hover:bg-maroon-50">
-                                                Configure
-                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path d="m9 18 6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="mt-4 text-xs text-slate-400">No contests in this category yet.</p>
-                            @endif
-                        </div>
+                    <article class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                        <span class="grid h-9 w-9 place-items-center rounded-lg bg-maroon-100 text-sm font-bold text-maroon-700">{{ strtoupper(substr($category->name, 0, 1)) }}</span>
+                        <h4 class="mt-3 font-semibold text-slate-900">{{ $category->name }}</h4>
+                        <p class="mt-1 text-xs text-slate-400">{{ $category->competitions->count() }} {{ Str::plural('contest', $category->competitions->count()) }}</p>
                     </article>
                 @empty
-                    <p class="py-8 text-center text-sm text-slate-400">Add a category to begin creating contests.</p>
+                    <p class="py-8 text-center text-sm text-slate-400 sm:col-span-2">Add a category to begin creating contests.</p>
                 @endforelse
             </div>
         </section>
     </div>
+
+    <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-950">Contests by category</h3>
+                <p class="mt-1 text-sm text-slate-500">Configure scoring rules or open the score sheet for each contest.</p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-maroon-200 bg-maroon-50 px-4 text-sm font-semibold text-maroon-700 transition hover:bg-maroon-100">View current leaderboard</a>
+
+                @if (auth()->user()->isAdmin() && $event->categories->contains(fn ($category) => $category->competitions->isNotEmpty()))
+                    <form id="reset-contest-scores-form" method="POST" action="{{ route('events.competition-scores.reset', $event) }}" class="flex flex-col gap-2 sm:flex-row" data-loading-text="Resetting contest scores…">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" name="reset_scope" value="selected" onclick="return confirm('Reset scores for the selected contests? Score entries and finalization will be cleared, but contest configuration will be preserved.')" class="h-10 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">Reset selected</button>
+                        <button type="submit" name="reset_scope" value="all" onclick="return confirm('Reset scores for every contest in this event? This cannot be undone.')" class="h-10 rounded-xl border border-red-300 bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100">Reset all scores</button>
+                    </form>
+                @endif
+            </div>
+        </div>
+
+        @if (auth()->user()->isAdmin())
+            @error('competition_ids')
+                <p class="border-b border-red-200 bg-red-50 px-6 py-3 text-sm font-medium text-red-700">{{ $message }}</p>
+            @enderror
+            @error('competition_ids.*')
+                <p class="border-b border-red-200 bg-red-50 px-6 py-3 text-sm font-medium text-red-700">{{ $message }}</p>
+            @enderror
+        @endif
+
+        <div class="space-y-6 p-5 sm:p-6">
+            @forelse ($event->categories as $category)
+                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/50">
+                    <div class="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <h4 class="font-semibold text-slate-950">{{ $category->name }}</h4>
+                            <p class="mt-0.5 text-xs text-slate-400">{{ $category->competitions->count() }} {{ Str::plural('contest', $category->competitions->count()) }}</p>
+                        </div>
+
+                        <form method="POST" action="{{ route('events.categories.competitions.store', [$event, $category]) }}" class="flex flex-col gap-2 sm:flex-row">
+                            @csrf
+                            <label for="competition_name_{{ $category->id }}" class="sr-only">Contest name for {{ $category->name }}</label>
+                            <input id="competition_name_{{ $category->id }}" name="competition_name" type="text" required class="h-10 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10 sm:w-64" placeholder="New contest name">
+                            <button type="submit" class="h-10 rounded-lg bg-maroon-700 px-4 text-sm font-semibold text-white transition hover:bg-maroon-800">Add contest</button>
+                        </form>
+                    </div>
+
+                    <div class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+                        @forelse ($category->competitions as $competition)
+                            <article class="flex min-h-52 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="grid h-10 w-10 place-items-center rounded-xl bg-maroon-50 text-maroon-700">
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4ZM7 6H4v1a4 4 0 0 0 4 4m9-5h3v1a4 4 0 0 1-4 4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                                        </span>
+                                        @if (auth()->user()->isAdmin())
+                                            <label class="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-500">
+                                                <input form="reset-contest-scores-form" name="competition_ids[]" type="checkbox" value="{{ $competition->id }}" class="rounded border-slate-300 text-maroon-700 focus:ring-maroon-600">
+                                                Select
+                                            </label>
+                                        @endif
+                                    </div>
+                                    <span class="flex flex-col items-end gap-1.5">
+                                        <span class="rounded-full bg-maroon-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-maroon-700">{{ $competition->scoring_method->label() }}</span>
+                                        @if ($competition->scoresAreFinalized())
+                                            <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Scores finalized</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                <h5 class="mt-4 text-lg font-semibold text-slate-950">{{ $competition->name }}</h5>
+                                <p class="mt-1 text-xs text-slate-400">{{ $competition->criteria_count }} {{ Str::plural('criterion', $competition->criteria_count) }} · {{ $competition->results_count }} scored {{ Str::plural('participant', $competition->results_count) }}</p>
+
+                                <div class="mt-auto grid grid-cols-2 gap-2 pt-5">
+                                    <a href="{{ route('events.categories.competitions.show', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Configure</a>
+                                    <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-lg bg-maroon-700 text-sm font-semibold text-white transition hover:bg-maroon-800">Enter scores</a>
+                                    @if (auth()->user()->isAdmin())
+                                        <form method="POST" action="{{ route('events.categories.competitions.destroy', [$event, $category, $competition]) }}" class="col-span-2" data-loading-text="Deleting contest…" onsubmit="return confirm('Delete this contest? Its configuration and scores will be permanently removed.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="h-10 w-full rounded-lg border border-red-200 bg-red-50 text-sm font-semibold text-red-700 transition hover:bg-red-100">Delete contest</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </article>
+                        @empty
+                            <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-10 text-center md:col-span-2 xl:col-span-3">
+                                <p class="text-sm text-slate-400">No contests in {{ $category->name }} yet.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+            @empty
+                <div class="rounded-xl border border-dashed border-slate-300 px-6 py-12 text-center">
+                    <p class="font-semibold text-slate-700">No categories yet</p>
+                    <p class="mt-1 text-sm text-slate-400">Add a category above to begin creating contest cards.</p>
+                </div>
+            @endforelse
+        </div>
+    </section>
 @endsection
