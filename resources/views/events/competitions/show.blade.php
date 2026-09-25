@@ -21,7 +21,17 @@
                 <h2 class="mt-2 text-3xl font-semibold tracking-tight">{{ $competition->name }}</h2>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-maroon-100/80">{{ $competition->scoring_method->description() }} Configure the points awarded to each final rank.</p>
             </div>
-            <a href="{{ route('events.show', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-semibold text-maroon-800 transition hover:bg-maroon-50">Back to event</a>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('events.show', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-white/25 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Back to event</a>
+                <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-semibold text-maroon-800 transition hover:bg-maroon-50">Enter scores</a>
+                @if (auth()->user()->isAdmin())
+                    <form method="POST" action="{{ route('events.categories.competitions.destroy', [$event, $category, $competition]) }}" data-loading-text="Deleting contest…" onsubmit="return confirm('Delete this contest? Its configuration and scores will be permanently removed.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="h-10 rounded-xl border border-red-200/60 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700">Delete contest</button>
+                    </form>
+                @endif
+            </div>
         </div>
     </section>
 

@@ -2,14 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\CompetitionEntryController;
 use App\Http\Controllers\CompetitionResultController;
+use App\Http\Controllers\CompetitionScoreController;
 use App\Http\Controllers\CriterionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventLeaderboardController;
 use App\Http\Controllers\EventTeamController;
 use App\Http\Controllers\JudgeScoreController;
 use App\Http\Controllers\LeaderboardController;
@@ -29,21 +33,31 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::middleware(['auth', 'active'])->group(function (): void {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware('admin')->group(function (): void {
         Route::resource('users', UserController::class)->only(['index', 'store', 'update']);
         Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
+        Route::post('/events', [EventController::class, 'store'])->name('events.store');
         Route::delete('/events/{event}', [EventController::class, 'destroy'])
             ->name('events.destroy');
+        Route::patch('/events/{event}/competition-scores/reset', [CompetitionScoreController::class, 'reset'])
+            ->name('events.competition-scores.reset');
+        Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/download', [ActivityLogController::class, 'download'])
+            ->name('logs.download');
     });
 
-    Route::resource('events', EventController::class)->only(['index', 'store', 'show']);
+    Route::patch('/events/{event}/leaderboard-freeze', [EventController::class, 'toggleLeaderboardFreeze'])
+        ->name('events.leaderboard-freeze');
+    Route::resource('events', EventController::class)->only(['index', 'show']);
     Route::get('/events/{event}/leaderboard', [LeaderboardController::class, 'internal'])
         ->name('events.leaderboard.show');
     Route::get('/events/{event}/leaderboard/data', [LeaderboardController::class, 'internalData'])
         ->name('events.leaderboard.data');
+    Route::get('/events/{event}/current-leaderboard', [EventLeaderboardController::class, 'show'])
+        ->name('events.leaderboard');
 
     Route::scopeBindings()->group(function (): void {
         Route::post('/events/{event}/departments', [DepartmentController::class, 'store'])
@@ -69,6 +83,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             '/events/{event}/categories/{category}/competitions',
             [CompetitionController::class, 'store'],
         )->name('events.categories.competitions.store');
+        Route::delete(
+            '/events/{event}/categories/{category}/competitions/{competition}',
+            [CompetitionController::class, 'destroy'],
+        )->middleware('admin')->name('events.categories.competitions.destroy');
         Route::get(
             '/events/{event}/categories/{category}/competitions/{competition}',
             [CompetitionController::class, 'show'],
@@ -93,6 +111,22 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             ->name('events.categories.competitions.finalize');
         Route::post('/events/{event}/categories/{category}/competitions/{competition}/reopen', [CompetitionResultController::class, 'reopen'])
             ->name('events.categories.competitions.reopen');
+        Route::get(
+            '/events/{event}/categories/{category}/competitions/{competition}/scores',
+            [CompetitionScoreController::class, 'edit'],
+        )->name('events.categories.competitions.scores.edit');
+        Route::patch(
+            '/events/{event}/categories/{category}/competitions/{competition}/scores',
+            [CompetitionScoreController::class, 'update'],
+        )->name('events.categories.competitions.scores.update');
+        Route::patch(
+            '/events/{event}/categories/{category}/competitions/{competition}/deductions',
+            [CompetitionScoreController::class, 'updateDeductions'],
+        )->name('events.categories.competitions.deductions.update');
+        Route::patch(
+            '/events/{event}/categories/{category}/competitions/{competition}/scores/finalization',
+            [CompetitionScoreController::class, 'updateFinalization'],
+        )->name('events.categories.competitions.scores.finalization.update');
 
         Route::post(
             '/events/{event}/categories/{category}/competitions/{competition}/criteria',
@@ -116,9 +150,6 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             [RankScoreController::class, 'destroy'],
         )->name('events.categories.competitions.rank-scores.destroy');
     });
-
-    Route::patch('/events/{event}/leaderboard-freeze', [EventController::class, 'toggleLeaderboardFreeze'])
-        ->name('events.leaderboard-freeze');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

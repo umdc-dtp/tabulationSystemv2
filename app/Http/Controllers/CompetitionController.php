@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateCompetitionScoringMethodRequest;
 use App\Models\Category;
 use App\Models\Competition;
 use App\Models\Event;
+use App\Services\CompetitionManager;
 use App\Services\CompetitionResultCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,10 @@ use Illuminate\View\View;
 
 final class CompetitionController extends Controller
 {
+    public function __construct(
+        private readonly CompetitionManager $competitionManager,
+    ) {}
+
     public function store(
         StoreCompetitionRequest $request,
         Event $event,
@@ -110,5 +115,18 @@ final class CompetitionController extends Controller
 
         return to_route('events.categories.competitions.show', [$event, $category, $competition])
             ->with('status', 'Leaderboard settings updated.');
+    }
+
+    public function destroy(
+        Event $event,
+        Category $category,
+        Competition $competition,
+    ): RedirectResponse {
+        $competitionName = $competition->name;
+
+        $this->competitionManager->delete($competition);
+
+        return to_route('events.show', $event)
+            ->with('status', "{$competitionName} was deleted successfully.");
     }
 }

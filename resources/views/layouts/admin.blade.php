@@ -85,20 +85,26 @@
                             </a>
                         @endif
 
-                        <a href="#" title="Logs" class="admin-sidebar-link flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white">
-                            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path d="M9 5h10M9 12h10M9 19h10M5 5h.01M5 12h.01M5 19h.01" stroke-linecap="round" />
-                            </svg>
-                            <span class="sidebar-label">Logs</span>
-                        </a>
+                        @if (auth()->user()->isAdmin())
+                            <a href="{{ route('logs.index') }}" title="Logs" @if(request()->routeIs('logs.*')) aria-current="page" @endif @class([
+                                'admin-sidebar-link flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition',
+                                'bg-maroon-600 text-white shadow-lg shadow-maroon-950/30' => request()->routeIs('logs.*'),
+                                'text-slate-300 hover:bg-slate-900 hover:text-white' => ! request()->routeIs('logs.*'),
+                            ])>
+                                <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M9 5h10M9 12h10M9 19h10M5 5h.01M5 12h.01M5 19h.01" stroke-linecap="round" />
+                                </svg>
+                                <span class="sidebar-label">Logs</span>
+                            </a>
 
-                        <a href="#" title="Settings" class="admin-sidebar-link flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white">
-                            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <circle cx="12" cy="12" r="3" />
-                                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3v-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6V3h4v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.6 1h.09v4H21a1.7 1.7 0 0 0-1.6 1Z" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <span class="sidebar-label">Settings</span>
-                        </a>
+                            <a href="#" title="Settings" class="admin-sidebar-link flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white">
+                                <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3v-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6V3h4v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.6 1h.09v4H21a1.7 1.7 0 0 0-1.6 1Z" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span class="sidebar-label">Settings</span>
+                            </a>
+                        @endif
                     </div>
                 </nav>
 
