@@ -39,6 +39,10 @@ final class UpdateCompetitionDeductionsRequest extends FormRequest
         $maximumDeductions = [];
 
         foreach ($competition->results as $result) {
+            if (! $result->has_entry) {
+                continue;
+            }
+
             $baseScore = $competition->usesCriteriaScoring()
                 ? (float) $result->criterionScores->sum(
                     static fn ($score): float => (float) $score->score,

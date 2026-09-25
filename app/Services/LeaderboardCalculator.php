@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\TieRankingMethod;
 use App\Models\Competition;
 use App\Models\Event;
 use App\Models\Participant;
@@ -22,8 +23,13 @@ final class LeaderboardCalculator
      *     leaderboard_points: float
      * }>
      */
-    public function competitionStandings(Competition $competition): Collection
+    public function competitionStandings(Competition $competition, ?Event $event = null): Collection
     {
+        if ($event === null) {
+            $competition->loadMissing('category.event');
+            $event = $competition->category->event;
+        }
+
         if (! $this->competitionRelationsAreLoaded($competition)) {
             $competition->load([
                 'criteria',
@@ -34,9 +40,10 @@ final class LeaderboardCalculator
         }
 
         $rows = $competition->results
-            ->filter(fn ($result): bool => $competition->usesCriteriaScoring()
-                ? $result->criterionScores->isNotEmpty()
-                : $result->wins !== null)
+            ->filter(fn ($result): bool => $result->has_entry
+                && ($competition->usesCriteriaScoring()
+                    ? $result->criterionScores->isNotEmpty()
+                    : $result->wins !== null))
             ->map(function ($result) use ($competition): array {
                 $wins = $competition->usesCriteriaScoring() ? null : (int) $result->wins;
                 $grossScore = $competition->usesCriteriaScoring()
@@ -67,14 +74,18 @@ final class LeaderboardCalculator
 
         $previousScore = null;
         $rank = 0;
+        $tieRankingMethod = $event->tie_ranking_method;
 
         return $rows->map(function (array $row, int $index) use (
             $competition,
+            $tieRankingMethod,
             &$previousScore,
             &$rank,
         ): array {
             if ($previousScore === null || abs($row['raw_score'] - $previousScore) > 0.00001) {
-                $rank = $index + 1;
+                $rank = $tieRankingMethod === TieRankingMethod::SkipPositions
+                    ? $index + 1
+                    : $rank + 1;
             }
 
             $rankScore = $competition->rankScores->firstWhere('rank', $rank);
@@ -112,7 +123,7 @@ final class LeaderboardCalculator
 
         foreach ($event->categories as $category) {
             foreach ($category->competitions as $competition) {
-                foreach ($this->competitionStandings($competition) as $row) {
+                foreach ($this->competitionStandings($competition, $event) as $row) {
                     $participant = $row['participant'];
                     $participantId = (string) $participant->getKey();
                     $totals[$participantId] ??= [

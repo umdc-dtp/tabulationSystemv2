@@ -98,10 +98,11 @@
         </section>
     @else
         @php
+            $hasRankings = $standings->isNotEmpty();
             $hasSavedScores = $resultsByParticipant->contains(function ($result) use ($competition) {
-                return $competition->usesCriteriaScoring()
+                return $result->has_entry && ($competition->usesCriteriaScoring()
                     ? $result->criterionScores->isNotEmpty()
-                    : $result->wins !== null;
+                    : $result->wins !== null);
             });
         @endphp
 
@@ -119,7 +120,8 @@
             <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-950">Score sheet</h3>
-                    <p class="mt-1 text-sm text-slate-500">Save a participant's base score first. Their deduction input will then become available.</p>
+                    <p class="mt-1 text-sm text-slate-500">Uncheck Has entry to exclude a participant from rankings, podium results, and non-podium points. Save a base score before entering a deduction.</p>
+                    <p class="mt-1 text-xs text-slate-400">Tie ranking: {{ $event->tie_ranking_method->label() }}.</p>
                 </div>
                 @if ($canEditScores)
                     <div class="flex flex-wrap items-center gap-2">
@@ -137,10 +139,26 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[900px] text-left text-sm">
+                <table class="w-full min-w-[1020px] text-left text-sm">
                     <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                         <tr>
-                            <th class="sticky left-0 z-10 bg-slate-50 px-6 py-3.5 font-semibold">Participant</th>
+                            @if ($hasRankings)
+                                <th id="rank-sort-heading" aria-sort="none" class="sticky left-0 z-20 w-20 min-w-20 bg-slate-50 px-2 py-3.5 text-center font-semibold">
+                                    <button id="rank-sort-button" type="button" aria-label="Sort by rank ascending" title="Sort by rank ascending" class="inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-slate-600 transition hover:bg-maroon-50 hover:text-maroon-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-maroon-600">
+                                        <span>Rank</span>
+                                        <svg class="h-3.5 w-3.5 text-maroon-700" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path id="rank-sort-up" class="opacity-50" d="m5 7 3-3 3 3" />
+                                            <path id="rank-sort-down" class="opacity-50" d="m5 9 3 3 3-3" />
+                                        </svg>
+                                    </button>
+                                </th>
+                            @endif
+                            <th @class([
+                                'sticky z-10 bg-slate-50 px-6 py-3.5 font-semibold',
+                                'left-20' => $hasRankings,
+                                'left-0' => ! $hasRankings,
+                            ])>Participant</th>
+                            <th class="px-5 py-3.5 text-center font-semibold">Has entry</th>
                             @if ($competition->usesCriteriaScoring())
                                 @foreach ($competition->criteria as $criterion)
                                     <th class="px-4 py-3.5 text-center font-semibold">
@@ -153,23 +171,29 @@
                             @endif
                             <th class="px-6 py-3.5 text-center font-semibold">Deduction</th>
                             <th class="px-6 py-3.5 text-right font-semibold">Adjusted total</th>
-                            @if (! $competition->usesCriteriaScoring())
-                                <th class="px-6 py-3.5 text-right font-semibold">Current rank</th>
-                            @endif
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody id="competition-score-rows" class="divide-y divide-slate-100">
                         @foreach ($event->participants as $participant)
                             @php
                                 $result = $resultsByParticipant->get($participant->id);
                                 $criterionScores = $result?->criterionScores->keyBy('criterion_id') ?? collect();
                                 $standing = $standings->first(fn ($row) => $row['participant']->is($participant));
+                                $entryField = "entries.{$participant->id}";
+                                $hasEntry = (bool) old($entryField, $result?->has_entry ?? true);
                                 $hasSavedScore = $competition->usesCriteriaScoring()
                                     ? $criterionScores->isNotEmpty()
                                     : $result?->wins !== null;
                             @endphp
-                            <tr class="align-middle hover:bg-slate-50/70">
-                                <td class="sticky left-0 z-10 bg-white px-6 py-4">
+                            <tr data-rank="{{ $standing['rank'] ?? '' }}" class="align-middle hover:bg-slate-50/70">
+                                @if ($hasRankings)
+                                    <td class="sticky left-0 z-20 w-20 min-w-20 bg-white px-4 py-4 text-center font-bold text-maroon-700">{{ $standing ? '#'.$standing['rank'] : '—' }}</td>
+                                @endif
+                                <td @class([
+                                    'sticky z-10 bg-white px-6 py-4',
+                                    'left-20' => $hasRankings,
+                                    'left-0' => ! $hasRankings,
+                                ])>
                                     <div class="flex items-center gap-3">
                                         @if ($participant->profile_picture_path)
                                             <img src="{{ Storage::disk('public')->url($participant->profile_picture_path) }}" alt="" class="h-9 w-9 rounded-full object-cover">
@@ -181,6 +205,15 @@
                                             <span class="block text-xs text-slate-400">{{ $participant->reference_no ?: 'No reference number' }}</span>
                                         </span>
                                     </div>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <input type="hidden" name="entries[{{ $participant->id }}]" value="0">
+                                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-maroon-300 hover:bg-maroon-50/50 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+                                        <input name="entries[{{ $participant->id }}]" type="checkbox" value="1" @checked($hasEntry) @disabled(! $canEditScores) class="peer h-4 w-4 rounded border-slate-300 text-maroon-700 focus:ring-maroon-600">
+                                        <span class="peer-checked:hidden">No entry</span>
+                                        <span class="hidden peer-checked:inline">Entered</span>
+                                    </label>
+                                    @error($entryField)<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                                 </td>
                                 @if ($competition->usesCriteriaScoring())
                                     @foreach ($competition->criteria as $criterion)
@@ -198,18 +231,15 @@
                                     </td>
                                 @endif
                                 <td class="px-6 py-4 text-center">
-                                    @if ($hasSavedScore)
+                                    @if ($hasSavedScore && $result?->has_entry)
                                         @php($deductionField = "deductions.{$participant->id}")
                                         <input form="deduction-form" name="deductions[{{ $participant->id }}]" type="number" min="0" max="{{ min($standing['gross_score'] ?? 0, 999999.99) }}" step="0.01" value="{{ old($deductionField, $result?->deduction ?? 0) }}" @disabled(! $canEditScores) class="h-10 w-28 rounded-lg border border-amber-300 bg-amber-50/50 px-3 text-center text-sm outline-none transition disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-500 focus:border-amber-600 focus:ring-4 focus:ring-amber-600/10" aria-label="Deduction for {{ $participant->name }}">
                                         @error($deductionField)<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                                     @else
-                                        <span class="text-xs text-slate-400">Save score first</span>
+                                        <span class="text-xs text-slate-400">{{ $result && ! $result->has_entry ? 'No entry' : 'Save score first' }}</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-right font-semibold text-slate-700">{{ $standing ? number_format($standing['raw_score'], 2) : '—' }}</td>
-                                @if (! $competition->usesCriteriaScoring())
-                                    <td class="px-6 py-4 text-right font-semibold text-slate-700">{{ $standing ? '#'.$standing['rank'] : '—' }}</td>
-                                @endif
+                                <td class="px-6 py-4 text-right font-semibold text-slate-700">{{ $standing ? number_format($standing['raw_score'], 2) : ($result && ! $result->has_entry ? 'Excluded' : '—') }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -227,3 +257,55 @@
         </form>
     @endif
 @endsection
+
+@push('scripts')
+    <script>
+        (() => {
+            const button = document.getElementById('rank-sort-button');
+            const heading = document.getElementById('rank-sort-heading');
+            const body = document.getElementById('competition-score-rows');
+
+            if (!button || !heading || !body) {
+                return;
+            }
+
+            const rows = Array.from(body.rows);
+            const originalOrder = new Map(rows.map((row, index) => [row, index]));
+            const upArrow = document.getElementById('rank-sort-up');
+            const downArrow = document.getElementById('rank-sort-down');
+            let direction = null;
+
+            button.addEventListener('click', () => {
+                direction = direction === 'ascending' ? 'descending' : 'ascending';
+
+                rows.sort((left, right) => {
+                    const leftHasRank = left.dataset.rank !== '';
+                    const rightHasRank = right.dataset.rank !== '';
+
+                    if (leftHasRank !== rightHasRank) {
+                        return leftHasRank ? -1 : 1;
+                    }
+
+                    if (leftHasRank) {
+                        const rankDifference = Number(left.dataset.rank) - Number(right.dataset.rank);
+
+                        if (rankDifference !== 0) {
+                            return direction === 'ascending' ? rankDifference : -rankDifference;
+                        }
+                    }
+
+                    return originalOrder.get(left) - originalOrder.get(right);
+                });
+
+                body.append(...rows);
+                heading.setAttribute('aria-sort', direction);
+
+                const nextDirection = direction === 'ascending' ? 'descending' : 'ascending';
+                button.setAttribute('aria-label', `Sort by rank ${nextDirection}`);
+                button.title = `Sort by rank ${nextDirection}`;
+                upArrow?.classList.toggle('opacity-50', direction !== 'ascending');
+                downArrow?.classList.toggle('opacity-50', direction !== 'descending');
+            });
+        })();
+    </script>
+@endpush

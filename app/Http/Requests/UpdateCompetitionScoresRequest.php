@@ -43,6 +43,8 @@ final class UpdateCompetitionScoresRequest extends FormRequest
 
         if (! $competition->usesCriteriaScoring()) {
             return [
+                'entries' => ['sometimes', Rule::array($participantIds)],
+                'entries.*' => ['boolean'],
                 'wins' => ['required', Rule::array($participantIds)],
                 'wins.*' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             ];
@@ -55,6 +57,8 @@ final class UpdateCompetitionScoresRequest extends FormRequest
             ->all();
 
         $rules = [
+            'entries' => ['sometimes', Rule::array($participantIds)],
+            'entries.*' => ['boolean'],
             'scores' => ['required', Rule::array($participantIds)],
         ];
 

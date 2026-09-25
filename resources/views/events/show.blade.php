@@ -67,6 +67,37 @@
         </div>
     </section>
 
+    <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-slate-950">Tie ranking rule</h3>
+            <p class="mt-1 text-sm text-slate-500">Choose how positions continue after tied scores or wins. This applies to every contest and its leaderboard points.</p>
+        </div>
+        <form method="POST" action="{{ route('events.tie-ranking.update', $event) }}" class="p-5 sm:p-6" data-loading-text="Saving tie ranking rule…">
+            @csrf
+            @method('PATCH')
+            <fieldset class="grid gap-3 lg:grid-cols-2">
+                <legend class="sr-only">Tie ranking rule</legend>
+                @foreach ($tieRankingMethods as $method)
+                    <label @class([
+                        'flex cursor-pointer gap-3 rounded-xl border p-4 transition',
+                        'border-maroon-600 bg-maroon-50 ring-2 ring-maroon-600/10' => old('tie_ranking_method', $event->tie_ranking_method->value) === $method->value,
+                        'border-slate-200 hover:border-maroon-300 hover:bg-maroon-50/40' => old('tie_ranking_method', $event->tie_ranking_method->value) !== $method->value,
+                    ])>
+                        <input name="tie_ranking_method" type="radio" value="{{ $method->value }}" @checked(old('tie_ranking_method', $event->tie_ranking_method->value) === $method->value) class="mt-1 border-slate-300 text-maroon-700 focus:ring-maroon-600">
+                        <span>
+                            <span class="block text-sm font-semibold text-slate-900">{{ $method->label() }}</span>
+                            <span class="mt-1 block text-xs leading-5 text-slate-500">{{ $method->description() }}</span>
+                        </span>
+                    </label>
+                @endforeach
+            </fieldset>
+            @error('tie_ranking_method')<p class="mt-3 text-sm text-red-600">{{ $message }}</p>@enderror
+            <div class="mt-4 flex justify-end">
+                <button type="submit" class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Save tie ranking rule</button>
+            </div>
+        </form>
+    </section>
+
     <div class="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-6 py-5">

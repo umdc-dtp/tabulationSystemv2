@@ -43,6 +43,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     });
 
     Route::resource('events', EventController::class)->only(['index', 'show']);
+    Route::patch('/events/{event}/tie-ranking', [EventController::class, 'updateTieRanking'])
+        ->name('events.tie-ranking.update');
     Route::get('/events/{event}/leaderboard', [EventLeaderboardController::class, 'show'])
         ->name('events.leaderboard');
 

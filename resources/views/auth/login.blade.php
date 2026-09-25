@@ -44,7 +44,7 @@
                         <p class="mt-5 max-w-sm text-base leading-7 text-maroon-100/80">A focused workspace for managing scores and producing dependable competition results.</p>
                     </div>
 
-                    <p class="relative text-sm text-maroon-200/70">Authorized personnel only</p>
+                    <p class="relative text-sm text-maroon-200/70">Developed and Maintained by PGITS | Programmers Guild of Information Technology Students ©</p>
                 </div>
 
                 <div class="flex items-center px-6 py-12 sm:px-12 lg:px-14">

@@ -30,7 +30,7 @@ final class EventLeaderboardController extends Controller
         foreach ($event->categories as $category) {
             foreach ($category->competitions as $competition) {
                 $standingsByCompetition[$competition->getKey()] = $this->leaderboard
-                    ->competitionStandings($competition);
+                    ->competitionStandings($competition, $event);
             }
         }
 

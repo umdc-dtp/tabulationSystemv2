@@ -18,6 +18,7 @@ final class ActivityLogger
         'login.store' => 'Submitted a sign-in attempt',
         'events.store' => 'Created an event',
         'events.destroy' => 'Deleted an event',
+        'events.tie-ranking.update' => 'Updated event tie ranking rule',
         'events.leaderboard-freeze' => 'Changed leaderboard freeze status',
         'events.participants.store' => 'Added a participant',
         'events.participants.update' => 'Updated a participant',

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Enums\AccountRole;
 use App\Enums\ScoringSystem;
+use App\Enums\TieRankingMethod;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\User;
@@ -50,8 +51,31 @@ final class EventManagementTest extends TestCase
             'creator_id' => $user->id,
             'name' => 'Regional Championship',
             'scoring_system' => ScoringSystem::Points->value,
+            'tie_ranking_method' => TieRankingMethod::SkipPositions->value,
             'leaderboard_frozen' => false,
         ]);
+    }
+
+    public function test_auditor_can_configure_the_event_tie_rule(): void
+    {
+        $auditor = User::factory()->create(['role' => AccountRole::Auditor]);
+        $event = Event::factory()->create();
+
+        $this->actingAs($auditor)
+            ->patch(route('events.tie-ranking.update', $event), [
+                'tie_ranking_method' => TieRankingMethod::ConsecutivePositions->value,
+            ])
+            ->assertRedirect(route('events.show', $event));
+
+        $this->assertSame(TieRankingMethod::ConsecutivePositions, $event->refresh()->tie_ranking_method);
+
+        $this->actingAs($auditor)
+            ->patch(route('events.tie-ranking.update', $event), [
+                'tie_ranking_method' => 'invalid',
+            ])
+            ->assertSessionHasErrors('tie_ranking_method');
+
+        $this->assertSame(TieRankingMethod::ConsecutivePositions, $event->refresh()->tie_ranking_method);
     }
 
     public function test_other_scoring_system_requires_a_description(): void

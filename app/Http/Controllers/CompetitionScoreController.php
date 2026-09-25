@@ -45,7 +45,7 @@ final class CompetitionScoreController extends Controller
             'category' => $category,
             'competition' => $competition,
             'resultsByParticipant' => $competition->results->keyBy('participant_id'),
-            'standings' => $this->leaderboard->competitionStandings($competition),
+            'standings' => $this->leaderboard->competitionStandings($competition, $event),
         ]);
     }
 

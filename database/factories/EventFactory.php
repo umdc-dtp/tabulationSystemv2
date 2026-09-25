@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\ScoringSystem;
+use App\Enums\TieRankingMethod;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,6 +25,7 @@ final class EventFactory extends Factory
             'start_date' => $startDate,
             'end_date' => fake()->dateTimeBetween($startDate, '+3 months'),
             'scoring_system' => ScoringSystem::Points,
+            'tie_ranking_method' => TieRankingMethod::SkipPositions,
             'other_scoring_system' => null,
             'leaderboard_frozen' => false,
         ];

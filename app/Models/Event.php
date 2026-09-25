@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ScoringSystem;
+use App\Enums\TieRankingMethod;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ final class Event extends Model
         'start_date',
         'end_date',
         'scoring_system',
+        'tie_ranking_method',
         'other_scoring_system',
         'leaderboard_frozen',
     ];
@@ -33,6 +35,7 @@ final class Event extends Model
             'start_date' => 'immutable_date',
             'end_date' => 'immutable_date',
             'scoring_system' => ScoringSystem::class,
+            'tie_ranking_method' => TieRankingMethod::class,
             'leaderboard_frozen' => 'boolean',
         ];
     }

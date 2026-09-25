@@ -17,6 +17,7 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-maroon-100 ring-1 ring-inset ring-white/15">Current scoring</span>
+                    <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-maroon-100 ring-1 ring-inset ring-white/15">Ties: {{ $event->tie_ranking_method->label() }}</span>
                     <span @class([
                         'rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset',
                         'bg-amber-400/15 text-amber-200 ring-amber-300/20' => $event->leaderboard_frozen,

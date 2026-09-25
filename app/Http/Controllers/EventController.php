@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\ScoringSystem;
+use App\Enums\TieRankingMethod;
 use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\UpdateEventTieRankingRequest;
 use App\Models\Event;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,11 +55,27 @@ final class EventController extends Controller
             'participants' => fn ($query) => $query->orderBy('name'),
             'categories' => fn ($query) => $query->orderBy('name'),
             'categories.competitions' => fn ($query) => $query
-                ->withCount(['criteria', 'results'])
+                ->withCount([
+                    'criteria',
+                    'results' => fn ($resultQuery) => $resultQuery->where('has_entry', true),
+                ])
                 ->orderBy('name'),
         ]);
 
-        return view('events.show', ['event' => $event]);
+        return view('events.show', [
+            'event' => $event,
+            'tieRankingMethods' => TieRankingMethod::cases(),
+        ]);
+    }
+
+    public function updateTieRanking(UpdateEventTieRankingRequest $request, Event $event): RedirectResponse
+    {
+        $event->update([
+            'tie_ranking_method' => $request->validated('tie_ranking_method'),
+        ]);
+
+        return to_route('events.show', $event)
+            ->with('status', 'Tie ranking rule updated successfully.');
     }
 
     public function destroy(Event $event): RedirectResponse
