@@ -6,7 +6,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Criterion extends Model
 {
@@ -22,10 +21,5 @@ final class Criterion extends Model
     public function competition(): BelongsTo
     {
         return $this->belongsTo(Competition::class);
-    }
-
-    public function scores(): HasMany
-    {
-        return $this->hasMany(CriterionScore::class);
     }
 }

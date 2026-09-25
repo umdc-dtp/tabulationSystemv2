@@ -27,7 +27,7 @@
         @method('PATCH')
         <div class="border-b border-slate-200 p-6">
             <h3 class="text-lg font-semibold text-slate-950">{{ $competition->usesCriteriaScoring() ? 'Judges’ scores' : 'Final win–loss record' }}</h3>
-            <p class="mt-1 text-sm text-slate-500">{{ $competition->results_open ? ($competition->finalized_at ? 'Save draft changes here, then publish all corrections from the game page. The current standings stay public until then.' : 'Save a draft, then finalize the game once every competitor is complete.') : 'Results are locked. Select Correct results on the game page to update them.' }}</p>
+            <p class="mt-1 text-sm text-slate-500">Save this score, then publish the game from the Score sheet. Editing a published score starts a private correction draft.</p>
         </div>
 
         @if ($competition->usesCriteriaScoring())
@@ -40,7 +40,7 @@
                                 @php($existingScore = $entry->judgeScores->first(fn ($score) => $score->judge_number === $judgeNumber && $score->criterion_id === $criterion->id)?->score)
                                 <div>
                                     <label for="score_{{ $judgeNumber }}_{{ $criterion->id }}" class="mb-1 block text-sm font-semibold text-slate-700">{{ $criterion->name }} <span class="font-normal text-slate-400">/ {{ $criterion->max_score }}</span></label>
-                                    <input id="score_{{ $judgeNumber }}_{{ $criterion->id }}" name="scores[{{ $judgeNumber }}][{{ $criterion->id }}]" type="number" min="0" max="{{ $criterion->max_score }}" step="0.01" value="{{ old('scores.'.$judgeNumber.'.'.$criterion->id, $existingScore) }}" @disabled(! $competition->results_open) class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10">
+                                    <input id="score_{{ $judgeNumber }}_{{ $criterion->id }}" name="scores[{{ $judgeNumber }}][{{ $criterion->id }}]" type="number" min="0" max="{{ $criterion->max_score }}" step="0.01" value="{{ old('scores.'.$judgeNumber.'.'.$criterion->id, $existingScore) }}" class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10">
                                     @error('scores.'.$judgeNumber.'.'.$criterion->id)<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                                 </div>
                             @endforeach
@@ -48,26 +48,29 @@
                     </fieldset>
                 @endfor
             </div>
+            <div class="border-t border-slate-200 p-6">
+                <label for="deduction" class="mb-1 block text-sm font-semibold text-slate-700">Deduction from averaged score</label>
+                <input id="deduction" name="deduction" type="number" min="0" max="999999.99" step="0.01" value="{{ old('deduction', $entry->deduction) }}" class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm sm:max-w-xs">
+                @error('deduction')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
         @else
             <div class="grid gap-5 p-6 sm:grid-cols-2">
                 <div>
                     <label for="win_total" class="mb-1 block text-sm font-semibold text-slate-700">Wins</label>
-                    <input id="win_total" name="win_total" type="number" min="0" step="1" value="{{ old('win_total', $entry->win_total) }}" @disabled(! $competition->results_open) class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm">
+                    <input id="win_total" name="win_total" type="number" min="0" step="1" value="{{ old('win_total', $entry->win_total) }}" class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm">
                     @error('win_total')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label for="loss_total" class="mb-1 block text-sm font-semibold text-slate-700">Losses</label>
-                    <input id="loss_total" name="loss_total" type="number" min="0" step="1" value="{{ old('loss_total', $entry->loss_total) }}" @disabled(! $competition->results_open) class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm">
+                    <input id="loss_total" name="loss_total" type="number" min="0" step="1" value="{{ old('loss_total', $entry->loss_total) }}" class="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm">
                     @error('loss_total')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
         @endif
 
         <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 p-6">
-            @if ($competition->results_open)
-                <button class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white">Save draft result</button>
-            @endif
-            <a href="{{ route('events.categories.competitions.show', [$event, $category, $competition]) }}" class="h-11 rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700">Back to game</a>
+            <button class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white">Save draft result</button>
+            <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="h-11 rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700">Back to score sheet</a>
         </div>
     </form>
 @endsection

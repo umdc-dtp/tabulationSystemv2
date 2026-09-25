@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Competition;
-use App\Models\CompetitionResult;
 use App\Models\Event;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -47,15 +46,12 @@ final class CompetitionManager
 
         DB::transaction(function () use ($competitions): void {
             foreach ($competitions as $competition) {
-                $competition->results()->eachById(
-                    static function (CompetitionResult $result): void {
-                        $result->delete();
-                    },
-                );
-
-                if ($competition->scores_finalized_at !== null) {
-                    $competition->update(['scores_finalized_at' => null]);
-                }
+                $competition->entries()->with('judgeScores')->get()->each(function ($entry): void {
+                    $entry->judgeScores()->delete();
+                    $entry->update(['win_total' => null, 'loss_total' => null, 'deduction' => 0]);
+                });
+                $competition->finalizedResults()->delete();
+                $competition->update(['finalized_at' => null, 'results_open' => true]);
 
                 $this->subjects->capture('reset', $competition);
             }

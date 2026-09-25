@@ -5,117 +5,58 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ResetCompetitionScoresRequest;
-use App\Http\Requests\UpdateCompetitionDeductionsRequest;
-use App\Http\Requests\UpdateCompetitionFinalizationRequest;
-use App\Http\Requests\UpdateCompetitionScoresRequest;
 use App\Models\Category;
 use App\Models\Competition;
 use App\Models\Event;
 use App\Services\CompetitionManager;
-use App\Services\CompetitionScoreManager;
-use App\Services\LeaderboardCalculator;
+use App\Services\CompetitionResultCalculator;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 final class CompetitionScoreController extends Controller
 {
-    public function __construct(
-        private readonly CompetitionScoreManager $scoreManager,
-        private readonly CompetitionManager $competitionManager,
-        private readonly LeaderboardCalculator $leaderboard,
-    ) {}
-
     public function edit(
         Event $event,
         Category $category,
         Competition $competition,
+        CompetitionResultCalculator $calculator,
     ): View {
-        $event->load([
-            'participants' => fn ($query) => $query->orderBy('name'),
-        ]);
         $competition->load([
             'criteria' => fn ($query) => $query->orderBy('name'),
-            'rankScores',
-            'results.participant',
-            'results.criterionScores',
+            'entries.participant.department',
+            'entries.team.department',
+            'entries.judgeScores',
+            'finalizedResults.department',
         ]);
 
-        return view('events.competitions.scores', [
-            'event' => $event,
-            'category' => $category,
-            'competition' => $competition,
-            'resultsByParticipant' => $competition->results->keyBy('participant_id'),
-            'standings' => $this->leaderboard->competitionStandings($competition),
-        ]);
-    }
+        $draftPreview = null;
+        $draftPreviewError = null;
 
-    public function update(
-        UpdateCompetitionScoresRequest $request,
-        Event $event,
-        Category $category,
-        Competition $competition,
-    ): RedirectResponse {
-        $event->load([
-            'participants' => fn ($query) => $query->orderBy('name'),
-        ]);
+        if ($competition->results_open && $competition->entries->isNotEmpty()) {
+            try {
+                $draftPreview = $calculator->preview($competition);
+            } catch (ValidationException $exception) {
+                $draftPreviewError = $exception->errors()['results'][0] ?? 'Complete all results to preview standings.';
+            }
+        }
 
-        $this->scoreManager->save(
-            $competition,
-            $event->participants,
-            $request->validated(),
-        );
-
-        return to_route('events.categories.competitions.scores.edit', [
-            $event,
-            $category,
-            $competition,
-        ])->with('status', 'Participant scores saved successfully.');
-    }
-
-    public function updateFinalization(
-        UpdateCompetitionFinalizationRequest $request,
-        Event $event,
-        Category $category,
-        Competition $competition,
-    ): RedirectResponse {
-        $finalized = $this->scoreManager->toggleFinalization($competition);
-
-        return to_route('events.categories.competitions.scores.edit', [
-            $event,
-            $category,
-            $competition,
-        ])->with(
-            'status',
-            $finalized
-                ? 'Contest scores finalized successfully.'
-                : 'Contest scores reopened for editing.',
-        );
-    }
-
-    public function updateDeductions(
-        UpdateCompetitionDeductionsRequest $request,
-        Event $event,
-        Category $category,
-        Competition $competition,
-    ): RedirectResponse {
-        $this->scoreManager->saveDeductions(
-            $competition,
-            $request->validated('deductions'),
-        );
-
-        return to_route('events.categories.competitions.scores.edit', [
-            $event,
-            $category,
-            $competition,
-        ])->with('status', 'Participant deductions saved successfully.');
+        return view('events.competitions.scores', compact(
+            'event',
+            'category',
+            'competition',
+            'draftPreview',
+            'draftPreviewError',
+        ));
     }
 
     public function reset(
         ResetCompetitionScoresRequest $request,
         Event $event,
+        CompetitionManager $manager,
     ): RedirectResponse {
         $data = $request->validated();
-        $count = $this->competitionManager->resetScores(
+        $count = $manager->resetScores(
             $event,
             $data['reset_scope'],
             $data['competition_ids'] ?? [],

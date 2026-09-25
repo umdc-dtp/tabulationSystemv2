@@ -36,7 +36,7 @@ final class DashboardMetrics
                 'participants',
                 'competitions',
                 'competitions as finalized_competitions_count' => static fn ($query) => $query
-                    ->whereNotNull('scores_finalized_at'),
+                    ->whereNotNull('finalized_at'),
             ])
             ->orderByDesc('start_date')
             ->orderByDesc('id')
@@ -100,7 +100,7 @@ final class DashboardMetrics
                 'categories',
                 'competitions',
                 'competitions as finalized_competitions_count' => static fn ($query) => $query
-                    ->whereNotNull('scores_finalized_at'),
+                    ->whereNotNull('finalized_at'),
             ])
             ->orderBy('end_date')
             ->orderBy('id')

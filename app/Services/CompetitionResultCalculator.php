@@ -34,13 +34,13 @@ final class CompetitionResultCalculator
         });
     }
 
-    /** @return list<array{department_id: int, entrant_name: string, member_names: ?array, rank: int, result_value: float|int, loss_total: ?int, points: string|float|int}> */
+    /** @return list<array{department_id: int, entrant_name: string, member_names: ?array, rank: int, result_value: float|int, loss_total: ?int, deduction: float, points: string|float|int}> */
     public function preview(Competition $competition): array
     {
         return $this->rankedRows($competition);
     }
 
-    /** @return list<array{department_id: int, entrant_name: string, member_names: ?array, rank: int, result_value: float|int, loss_total: ?int, points: string|float|int}> */
+    /** @return list<array{department_id: int, entrant_name: string, member_names: ?array, rank: int, result_value: float|int, loss_total: ?int, deduction: float, points: string|float|int}> */
     private function rankedRows(Competition $competition): array
     {
         $competition->load([
@@ -87,8 +87,9 @@ final class CompetitionResultCalculator
                 }
 
                 $totalCents = $entry->judgeScores->sum(fn ($score): int => (int) round((float) $score->score * 100));
-                $sortValue = $totalCents;
-                $displayValue = round($totalCents / $competition->judge_count / 100, 2);
+                $deductionCents = (int) round((float) $entry->deduction * 100);
+                $sortValue = max(0, (int) round($totalCents / $competition->judge_count) - $deductionCents);
+                $displayValue = $sortValue / 100;
                 $lossTotal = null;
             } else {
                 if ($entry->win_total === null || $entry->loss_total === null) {
@@ -107,6 +108,7 @@ final class CompetitionResultCalculator
                 'result_value' => $displayValue,
                 'sort_value' => $sortValue,
                 'loss_total' => $lossTotal,
+                'deduction' => $competition->usesCriteriaScoring() ? (float) $entry->deduction : 0.0,
             ];
         });
 
@@ -140,6 +142,7 @@ final class CompetitionResultCalculator
                 'rank' => $rank,
                 'result_value' => $row['result_value'],
                 'loss_total' => $row['loss_total'],
+                'deduction' => $row['deduction'],
                 'points' => $points,
             ];
         }

@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class CompetitionEntry extends Model
 {
-    protected $fillable = ['participant_id', 'event_team_id', 'competed', 'win_total', 'loss_total'];
+    protected $fillable = ['participant_id', 'event_team_id', 'competed', 'win_total', 'loss_total', 'deduction'];
 
     protected function casts(): array
     {
-        return ['competed' => 'boolean', 'win_total' => 'integer', 'loss_total' => 'integer'];
+        return ['competed' => 'boolean', 'win_total' => 'integer', 'loss_total' => 'integer', 'deduction' => 'decimal:2'];
     }
 
     public function competition(): BelongsTo

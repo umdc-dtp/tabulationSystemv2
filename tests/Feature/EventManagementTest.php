@@ -124,8 +124,8 @@ final class EventManagementTest extends TestCase
             ->assertSee('Jordan Reyes')
             ->assertSee('Senior Division')
             ->assertSee('Solo Performance')
-            ->assertSee('Current leaderboard')
-            ->assertSee('Enter scores');
+            ->assertSee('Internal leaderboard')
+            ->assertSee('Score sheet');
     }
 
     public function test_category_from_another_event_cannot_receive_a_competition(): void

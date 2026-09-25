@@ -112,7 +112,7 @@ final class LeaderboardFeatureTest extends TestCase
             ->assertJsonPath('rows.0.points', '50.00');
         $this->actingAs($auditor)->getJson(route('events.leaderboard.data', $event))
             ->assertJsonPath('rows.0.name', 'Arts');
-        $this->actingAs($auditor)->get(route('events.categories.competitions.show', [$event, $category, $competition]))
+        $this->actingAs($auditor)->get(route('events.categories.competitions.scores.edit', [$event, $category, $competition]))
             ->assertSee('Draft standings preview')
             ->assertSee('Published standings')
             ->assertSee('5–1')
@@ -156,7 +156,7 @@ final class LeaderboardFeatureTest extends TestCase
         $this->getJson(route('leaderboards.data', $event).'?scope=game&competition_id='.$competition->id)
             ->assertJsonPath('rows.0.name', 'Alex')
             ->assertJsonPath('rows.0.points', '50.00');
-        $this->actingAs($auditor)->get(route('events.categories.competitions.show', [$event, $category, $competition]))
+        $this->actingAs($auditor)->get(route('events.categories.competitions.scores.edit', [$event, $category, $competition]))
             ->assertViewHas('draftPreview', fn (array $rows): bool => $rows[0]['entrant_name'] === 'Bea' && $rows[0]['rank'] === 1);
 
         $this->actingAs($auditor)->post(route('events.categories.competitions.finalize', [$event, $category, $competition]))->assertRedirect();
@@ -313,7 +313,7 @@ final class LeaderboardFeatureTest extends TestCase
 
         $this->actingAs($auditor)
             ->get(route('events.categories.competitions.show', [$event, $category, $competition]))
-            ->assertSee('Competitors and results')
+            ->assertSee('Competitors')
             ->assertSee('Alex');
 
         $this->actingAs($auditor)

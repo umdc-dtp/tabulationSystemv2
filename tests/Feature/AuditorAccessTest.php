@@ -95,20 +95,32 @@ final class AuditorAccessTest extends TestCase
             ])
             ->assertRedirect();
 
+        $department = $event->departments()->create(['name' => 'Arts']);
+        $participant->update(['department_id' => $department->id]);
+        $this->actingAs($auditor)->post(route('events.categories.competitions.entries.store', [
+            $event,
+            $category,
+            $competition,
+        ]), ['competitor' => 'participant:'.$participant->id])->assertRedirect();
+        $entry = $competition->entries()->sole();
+
         $this->actingAs($auditor)
-            ->patch(route('events.categories.competitions.scores.update', [
+            ->patch(route('events.categories.competitions.entries.result.update', [
                 $event,
                 $category,
                 $competition,
+                $entry,
             ]), [
-                'wins' => [$participant->id => 5],
+                'win_total' => 5,
+                'loss_total' => 1,
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('competition_results', [
+        $this->assertDatabaseHas('competition_entries', [
             'competition_id' => $competition->id,
             'participant_id' => $participant->id,
-            'wins' => 5,
+            'win_total' => 5,
+            'loss_total' => 1,
         ]);
 
         $this->actingAs($auditor)

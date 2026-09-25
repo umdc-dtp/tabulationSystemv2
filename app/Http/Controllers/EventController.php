@@ -55,7 +55,7 @@ final class EventController extends Controller
             'departments' => fn ($query) => $query->orderBy('name'),
             'categories' => fn ($query) => $query->orderBy('name'),
             'categories.competitions' => fn ($query) => $query
-                ->withCount(['criteria', 'results'])
+                ->withCount(['criteria', 'entries'])
                 ->orderBy('name'),
         ]);
 

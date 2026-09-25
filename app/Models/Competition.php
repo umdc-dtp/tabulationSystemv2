@@ -23,7 +23,6 @@ final class Competition extends Model
         'judge_count',
         'results_open',
         'finalized_at',
-        'scores_finalized_at',
     ];
 
     protected function casts(): array
@@ -34,7 +33,6 @@ final class Competition extends Model
             'judge_count' => 'integer',
             'results_open' => 'boolean',
             'finalized_at' => 'datetime',
-            'scores_finalized_at' => 'immutable_datetime',
         ];
     }
 
@@ -45,7 +43,7 @@ final class Competition extends Model
 
     public function scoresAreFinalized(): bool
     {
-        return $this->scores_finalized_at !== null;
+        return $this->finalized_at !== null;
     }
 
     public function category(): BelongsTo
@@ -71,10 +69,5 @@ final class Competition extends Model
     public function finalizedResults(): HasMany
     {
         return $this->hasMany(FinalizedResult::class);
-    }
-
-    public function results(): HasMany
-    {
-        return $this->hasMany(CompetitionResult::class);
     }
 }

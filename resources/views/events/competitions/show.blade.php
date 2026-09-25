@@ -23,7 +23,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('events.show', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-white/25 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Back to event</a>
-                <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-semibold text-maroon-800 transition hover:bg-maroon-50">Enter scores</a>
+                <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-semibold text-maroon-800 transition hover:bg-maroon-50">Score sheet</a>
                 @if (auth()->user()->isAdmin())
                     <form method="POST" action="{{ route('events.categories.competitions.destroy', [$event, $category, $competition]) }}" data-loading-text="Deleting contest…" onsubmit="return confirm('Delete this contest? Its configuration and scores will be permanently removed.')">
                         @csrf
@@ -60,38 +60,34 @@
     <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-5">
             <div>
-                <h3 class="text-lg font-semibold text-slate-950">Competitors and results</h3>
-                <p class="mt-1 text-sm text-slate-500">{{ $competition->results_open ? ($competition->finalized_at ? 'Edit draft scores, then publish corrections together. The last published standings stay public.' : 'Draft competitors and scores can be edited. Public results are hidden until finalized.') : 'Results are published. Start a correction draft to update scores.' }}</p>
+                <h3 class="text-lg font-semibold text-slate-950">Competitors</h3>
+                <p class="mt-1 text-sm text-slate-500">Choose registered individuals or teams for this game. Enter scores and publish results in the Score sheet.</p>
             </div>
-            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $competition->results_open ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">{{ $competition->results_open ? ($competition->finalized_at ? 'Correcting' : 'Draft') : 'Published' }}</span>
+            <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="rounded-lg bg-maroon-700 px-4 py-2 text-sm font-semibold text-white hover:bg-maroon-800">Open score sheet</a>
         </div>
-
-        @if ($competition->results_open)
-            <div class="border-b border-slate-200 bg-slate-50 p-5">
-                <form method="POST" action="{{ route('events.categories.competitions.entries.store', [$event, $category, $competition]) }}" class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                    @csrf
-                    <div>
-                        <label for="registered_competitor" class="mb-1 block text-xs font-semibold text-slate-600">Registered participant or team</label>
-                        <select id="registered_competitor" name="competitor" required class="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm">
-                            <option value="">Choose a registered competitor</option>
-                            <optgroup label="Individuals">
+        <div class="border-b border-slate-200 bg-slate-50 p-5">
+            <form method="POST" action="{{ route('events.categories.competitions.entries.store', [$event, $category, $competition]) }}" class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                @csrf
+                <div>
+                    <label for="registered_competitor" class="mb-1 block text-xs font-semibold text-slate-600">Registered participant or team</label>
+                    <select id="registered_competitor" name="competitor" required class="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm">
+                        <option value="">Choose a registered competitor</option>
+                        <optgroup label="Individuals">
                             @foreach ($event->participants->whereNotNull('department_id') as $participant)
                                 <option value="participant:{{ $participant->id }}" @selected(old('competitor') === 'participant:'.$participant->id)>{{ $participant->name }} — {{ $participant->department->name }}</option>
                             @endforeach
-                            </optgroup>
-                            <optgroup label="Teams">
+                        </optgroup>
+                        <optgroup label="Teams">
                             @foreach ($event->teams as $team)
                                 <option value="team:{{ $team->id }}" @selected(old('competitor') === 'team:'.$team->id)>{{ $team->name }} — {{ $team->department->name }}</option>
                             @endforeach
-                            </optgroup>
-                        </select>
-                    </div>
-                    <button class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white">Add competitor</button>
-                </form>
-                <p class="mt-2 text-xs text-slate-500">Register individuals and teams on the event page first. Changing competitors or participation withdraws the previously published standings until you publish again.</p>
-            </div>
-        @endif
-
+                        </optgroup>
+                    </select>
+                </div>
+                <button class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white">Add competitor</button>
+            </form>
+            <p class="mt-2 text-xs text-slate-500">Changing the roster or participation hides this game's published results until you publish again.</p>
+        </div>
         <div class="divide-y divide-slate-100">
             @forelse ($competition->entries as $entry)
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
@@ -100,79 +96,24 @@
                         <p class="text-xs text-slate-500">{{ $entry->participant?->department?->name ?? $entry->team?->department?->name }}@if ($entry->team) · {{ implode(', ', $entry->team->member_names) }}@endif · {{ $entry->competed ? 'Competed' : 'Did not compete' }}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <a href="{{ route('events.categories.competitions.entries.show', [$event, $category, $competition, $entry]) }}" class="text-sm font-semibold text-maroon-700">{{ $competition->results_open ? 'Enter result' : 'View result' }}</a>
-                        @if ($competition->results_open)
-                            <form method="POST" action="{{ route('events.categories.competitions.entries.participation.update', [$event, $category, $competition, $entry]) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="competed" value="{{ $entry->competed ? '0' : '1' }}">
-                                <button class="text-xs font-semibold text-slate-600">{{ $entry->competed ? 'Mark absent' : 'Mark competed' }}</button>
-                            </form>
-                            <form method="POST" action="{{ route('events.categories.competitions.entries.destroy', [$event, $category, $competition, $entry]) }}" onsubmit="return confirm('Remove this competitor and draft scores?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="text-xs font-semibold text-red-600">Remove</button>
-                            </form>
-                        @endif
+                        <form method="POST" action="{{ route('events.categories.competitions.entries.participation.update', [$event, $category, $competition, $entry]) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="competed" value="{{ $entry->competed ? '0' : '1' }}">
+                            <button class="text-xs font-semibold text-slate-600">{{ $entry->competed ? 'Mark absent' : 'Mark competed' }}</button>
+                        </form>
+                        <form method="POST" action="{{ route('events.categories.competitions.entries.destroy', [$event, $category, $competition, $entry]) }}" onsubmit="return confirm('Remove this competitor and their scores?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="text-xs font-semibold text-red-600">Remove</button>
+                        </form>
                     </div>
                 </div>
             @empty
                 <p class="px-6 py-8 text-sm text-slate-500">No competitors entered yet.</p>
             @endforelse
         </div>
-
-        <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 p-5">
-            @if ($competition->results_open)
-                <form method="POST" action="{{ route('events.categories.competitions.finalize', [$event, $category, $competition]) }}">
-                    @csrf
-                    <button class="h-11 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white">{{ $competition->finalized_at ? 'Publish corrections' : 'Finalize results' }}</button>
-                </form>
-            @else
-                <form method="POST" action="{{ route('events.categories.competitions.reopen', [$event, $category, $competition]) }}">
-                    @csrf
-                    <button class="h-11 rounded-xl border border-amber-300 px-5 text-sm font-semibold text-amber-900">Correct results</button>
-                </form>
-            @endif
-            @if ($competition->finalized_at)<p class="text-xs text-slate-500">Last published {{ $competition->finalized_at->format('M j, Y g:i A') }}. Score corrections remain a private draft until you publish them.</p>@endif
-        </div>
-
-        @if ($competition->results_open && $draftPreview !== null)
-            <div class="overflow-x-auto border-t border-slate-200">
-                <div class="bg-amber-50 px-6 py-4">
-                    <h4 class="text-sm font-semibold text-amber-950">Draft standings preview</h4>
-                    <p class="mt-1 text-xs text-amber-800">These recalculated ranks and points are visible only to auditors until you publish.</p>
-                </div>
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-3">Rank</th><th class="px-6 py-3">Competitor</th><th class="px-6 py-3 text-right">{{ $competition->usesCriteriaScoring() ? 'Score' : 'W–L' }}</th><th class="px-6 py-3 text-right">Points</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @foreach ($draftPreview as $row)
-                            <tr><td class="px-6 py-3 font-semibold">#{{ $row['rank'] }}</td><td class="px-6 py-3">{{ $row['entrant_name'] }}</td><td class="px-6 py-3 text-right">{{ $competition->usesCriteriaScoring() ? number_format((float) $row['result_value'], 2) : $row['result_value'].'–'.$row['loss_total'] }}</td><td class="px-6 py-3 text-right">{{ number_format((float) $row['points'], 2) }}</td></tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @elseif ($competition->results_open && $draftPreviewError !== null)
-            <p class="border-t border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-900">Draft preview unavailable: {{ $draftPreviewError }}</p>
-        @endif
-
-        @if ($competition->finalizedResults->isNotEmpty())
-            <div class="overflow-x-auto border-t border-slate-200">
-                <div class="px-6 py-4">
-                    <h4 class="text-sm font-semibold text-slate-900">Published standings</h4>
-                    @if ($competition->results_open)<p class="mt-1 text-xs text-slate-500">These are still visible to the public while you correct scores.</p>@endif
-                </div>
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-3">Rank</th><th class="px-6 py-3">Competitor</th><th class="px-6 py-3">Department</th><th class="px-6 py-3 text-right">{{ $competition->usesCriteriaScoring() ? 'Score' : 'W–L' }}</th><th class="px-6 py-3 text-right">Points</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @foreach ($competition->finalizedResults->sortBy('rank') as $result)
-                            <tr><td class="px-6 py-3 font-semibold">#{{ $result->rank }}</td><td class="px-6 py-3">{{ $result->entrant_name }}@if ($result->member_names)<span class="mt-1 block text-xs text-slate-500">{{ implode(', ', $result->member_names) }}</span>@endif</td><td class="px-6 py-3">{{ $result->department->name }}</td><td class="px-6 py-3 text-right">{{ $competition->usesCriteriaScoring() ? number_format((float) $result->result_value, 2) : (int) $result->result_value.'–'.($result->loss_total ?? '—') }}</td><td class="px-6 py-3 text-right">{{ number_format((float) $result->points, 2) }}</td></tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
     </section>
-
     <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-6 py-5">
             <h3 class="text-lg font-semibold text-slate-950">Winner determination</h3>

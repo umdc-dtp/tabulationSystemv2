@@ -19,8 +19,6 @@ final class CompetitionEntryController extends Controller
 {
     public function store(Request $request, Event $event, Category $category, Competition $competition, CompetitionResultCalculator $calculator): RedirectResponse
     {
-        abort_unless($competition->results_open, 403);
-
         $data = $request->validate(['competitor' => ['required', 'string', 'regex:/^(participant|team):[1-9][0-9]*$/']]);
         [$type, $identifier] = explode(':', $data['competitor']);
 
@@ -80,8 +78,6 @@ final class CompetitionEntryController extends Controller
         CompetitionEntry $entry,
         CompetitionResultCalculator $calculator,
     ): RedirectResponse {
-        abort_unless($competition->results_open, 403);
-
         $data = $request->validate(['competed' => ['required', 'boolean']]);
         DB::transaction(function () use ($entry, $data, $competition, $calculator): void {
             $entry->update(['competed' => $data['competed']]);
@@ -97,8 +93,6 @@ final class CompetitionEntryController extends Controller
 
     public function destroy(Event $event, Category $category, Competition $competition, CompetitionEntry $entry, CompetitionResultCalculator $calculator): RedirectResponse
     {
-        abort_unless($competition->results_open, 403);
-
         DB::transaction(function () use ($entry, $competition, $calculator): void {
             $entry->delete();
             $calculator->invalidate($competition);

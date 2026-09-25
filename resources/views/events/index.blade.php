@@ -85,7 +85,7 @@
                     <div class="flex items-center justify-between gap-3 border-t border-slate-100 px-6 py-3">
                         <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-maroon-700 transition hover:bg-maroon-50 hover:text-maroon-900">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                            Current leaderboard
+                            Leaderboard
                         </a>
 
                         @if (auth()->user()->isAdmin())

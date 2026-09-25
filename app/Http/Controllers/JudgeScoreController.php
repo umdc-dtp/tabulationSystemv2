@@ -21,11 +21,14 @@ final class JudgeScoreController extends Controller
         Competition $competition,
         CompetitionEntry $entry,
     ): RedirectResponse {
-        abort_unless($competition->results_open, 403);
+        abort_unless($competition->results_open || $competition->finalized_at !== null, 403);
 
         if ($competition->usesCriteriaScoring()) {
             $competition->load('criteria');
-            $rules = ['scores' => ['required', 'array']];
+            $rules = [
+                'scores' => ['required', 'array'],
+                'deduction' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', 'max:999999.99'],
+            ];
 
             for ($judgeNumber = 1; $judgeNumber <= $competition->judge_count; $judgeNumber++) {
                 foreach ($competition->criteria as $criterion) {
@@ -35,9 +38,15 @@ final class JudgeScoreController extends Controller
                 }
             }
 
-            $request->validate($rules);
+            $data = $request->validate($rules);
 
-            DB::transaction(function () use ($request, $competition, $entry): void {
+            DB::transaction(function () use ($request, $competition, $entry, $data): void {
+                if (! $competition->results_open) {
+                    $competition->update(['results_open' => true]);
+                }
+
+                $entry->update(['deduction' => $data['deduction'] ?? $entry->deduction]);
+
                 for ($judgeNumber = 1; $judgeNumber <= $competition->judge_count; $judgeNumber++) {
                     foreach ($competition->criteria as $criterion) {
                         $value = $request->input("scores.{$judgeNumber}.{$criterion->getKey()}");
@@ -61,13 +70,19 @@ final class JudgeScoreController extends Controller
                 'win_total' => ['nullable', 'integer', 'min:0', 'max:1000000'],
                 'loss_total' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             ]);
-            $entry->update([
-                'win_total' => $data['win_total'] ?? null,
-                'loss_total' => $data['loss_total'] ?? null,
-            ]);
+            DB::transaction(function () use ($competition, $entry, $data): void {
+                if (! $competition->results_open) {
+                    $competition->update(['results_open' => true]);
+                }
+
+                $entry->update([
+                    'win_total' => $data['win_total'] ?? null,
+                    'loss_total' => $data['loss_total'] ?? null,
+                ]);
+            });
         }
 
-        return to_route('events.categories.competitions.entries.show', [$event, $category, $competition, $entry])
+        return to_route('events.categories.competitions.scores.edit', [$event, $category, $competition])
             ->with('status', 'Draft result saved.');
     }
 }

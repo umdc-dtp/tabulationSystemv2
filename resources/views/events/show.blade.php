@@ -32,13 +32,6 @@
             <div class="flex flex-wrap items-center gap-3">
                 <a href="{{ route('events.leaderboard.show', $event) }}" class="inline-flex h-11 items-center rounded-xl border border-white/30 px-4 text-sm font-semibold text-white hover:bg-white/10">Internal leaderboard</a>
                 <a href="{{ route('leaderboards.show', $event) }}" target="_blank" rel="noopener" class="inline-flex h-11 items-center rounded-xl border border-white/30 px-4 text-sm font-semibold text-white hover:bg-white/10">Public page</a>
-                <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/30 bg-maroon-950/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    Current leaderboard
-                </a>
-
                 <form method="POST" action="{{ route('events.leaderboard-freeze', $event) }}">
                     @csrf
                     @method('PATCH')
@@ -319,7 +312,7 @@
                 <p class="mt-1 text-sm text-slate-500">Configure scoring rules or open the score sheet for each contest.</p>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row">
-                <a href="{{ route('events.leaderboard', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-maroon-200 bg-maroon-50 px-4 text-sm font-semibold text-maroon-700 transition hover:bg-maroon-100">View current leaderboard</a>
+                <a href="{{ route('events.leaderboard.show', $event) }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-maroon-200 bg-maroon-50 px-4 text-sm font-semibold text-maroon-700 transition hover:bg-maroon-100">View event leaderboard</a>
 
                 @if (auth()->user()->isAdmin() && $event->categories->contains(fn ($category) => $category->competitions->isNotEmpty()))
                     <form id="reset-contest-scores-form" method="POST" action="{{ route('events.competition-scores.reset', $event) }}" class="flex flex-col gap-2 sm:flex-row" data-loading-text="Resetting contest scores…">
@@ -381,11 +374,11 @@
                                     </span>
                                 </div>
                                 <h5 class="mt-4 text-lg font-semibold text-slate-950">{{ $competition->name }}</h5>
-                                <p class="mt-1 text-xs text-slate-400">{{ $competition->criteria_count }} {{ Str::plural('criterion', $competition->criteria_count) }} · {{ $competition->results_count }} scored {{ Str::plural('participant', $competition->results_count) }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ $competition->criteria_count }} {{ Str::plural('criterion', $competition->criteria_count) }} · {{ $competition->entries_count }} {{ Str::plural('competitor', $competition->entries_count) }}</p>
 
                                 <div class="mt-auto grid grid-cols-2 gap-2 pt-5">
                                     <a href="{{ route('events.categories.competitions.show', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Configure</a>
-                                    <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-lg bg-maroon-700 text-sm font-semibold text-white transition hover:bg-maroon-800">Enter scores</a>
+                                    <a href="{{ route('events.categories.competitions.scores.edit', [$event, $category, $competition]) }}" class="inline-flex h-10 items-center justify-center rounded-lg bg-maroon-700 text-sm font-semibold text-white transition hover:bg-maroon-800">Score sheet</a>
                                     @if (auth()->user()->isAdmin())
                                         <form method="POST" action="{{ route('events.categories.competitions.destroy', [$event, $category, $competition]) }}" class="col-span-2" data-loading-text="Deleting contest…" onsubmit="return confirm('Delete this contest? Its configuration and scores will be permanently removed.')">
                                             @csrf

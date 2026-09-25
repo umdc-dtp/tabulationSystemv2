@@ -13,7 +13,6 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\EventLeaderboardController;
 use App\Http\Controllers\EventTeamController;
 use App\Http\Controllers\JudgeScoreController;
 use App\Http\Controllers\LeaderboardController;
@@ -56,7 +55,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         ->name('events.leaderboard.show');
     Route::get('/events/{event}/leaderboard/data', [LeaderboardController::class, 'internalData'])
         ->name('events.leaderboard.data');
-    Route::get('/events/{event}/current-leaderboard', [EventLeaderboardController::class, 'show'])
+    Route::get('/events/{event}/current-leaderboard', [LeaderboardController::class, 'internal'])
         ->name('events.leaderboard');
 
     Route::scopeBindings()->group(function (): void {
@@ -115,19 +114,6 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             '/events/{event}/categories/{category}/competitions/{competition}/scores',
             [CompetitionScoreController::class, 'edit'],
         )->name('events.categories.competitions.scores.edit');
-        Route::patch(
-            '/events/{event}/categories/{category}/competitions/{competition}/scores',
-            [CompetitionScoreController::class, 'update'],
-        )->name('events.categories.competitions.scores.update');
-        Route::patch(
-            '/events/{event}/categories/{category}/competitions/{competition}/deductions',
-            [CompetitionScoreController::class, 'updateDeductions'],
-        )->name('events.categories.competitions.deductions.update');
-        Route::patch(
-            '/events/{event}/categories/{category}/competitions/{competition}/scores/finalization',
-            [CompetitionScoreController::class, 'updateFinalization'],
-        )->name('events.categories.competitions.scores.finalization.update');
-
         Route::post(
             '/events/{event}/categories/{category}/competitions/{competition}/criteria',
             [CriterionController::class, 'store'],

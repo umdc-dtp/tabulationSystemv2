@@ -10,7 +10,6 @@ use App\Models\Category;
 use App\Models\Competition;
 use App\Models\Event;
 use App\Services\CompetitionManager;
-use App\Services\CompetitionResultCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -39,14 +38,12 @@ final class CompetitionController extends Controller
         Event $event,
         Category $category,
         Competition $competition,
-        CompetitionResultCalculator $calculator,
     ): View {
         $competition->load([
             'criteria' => fn ($query) => $query->orderBy('name'),
             'rankScores' => fn ($query) => $query->orderBy('rank'),
             'entries.participant.department',
             'entries.team.department',
-            'finalizedResults.department',
         ]);
 
         $event->load([
@@ -55,23 +52,10 @@ final class CompetitionController extends Controller
             'teams' => fn ($query) => $query->with('department')->orderBy('name'),
         ]);
 
-        $draftPreview = null;
-        $draftPreviewError = null;
-
-        if ($competition->results_open && $competition->entries->isNotEmpty()) {
-            try {
-                $draftPreview = $calculator->preview($competition);
-            } catch (ValidationException $exception) {
-                $draftPreviewError = $exception->errors()['results'][0] ?? 'Complete all draft results to preview standings.';
-            }
-        }
-
         return view('events.competitions.show', [
             'event' => $event,
             'category' => $category,
             'competition' => $competition,
-            'draftPreview' => $draftPreview,
-            'draftPreviewError' => $draftPreviewError,
         ]);
     }
 

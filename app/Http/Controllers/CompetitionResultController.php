@@ -23,7 +23,7 @@ final class CompetitionResultController extends Controller
         $isCorrection = $competition->finalized_at !== null;
         $calculator->finalize($competition);
 
-        return to_route('events.categories.competitions.show', [$event, $category, $competition])
+        return to_route('events.categories.competitions.scores.edit', [$event, $category, $competition])
             ->with('status', $isCorrection
                 ? 'Corrections published and leaderboard updated.'
                 : 'Game results finalized and leaderboard updated.');
