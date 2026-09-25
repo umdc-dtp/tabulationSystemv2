@@ -49,7 +49,9 @@ final class EventController extends Controller
     public function show(Event $event): View
     {
         $event->load([
-            'participants' => fn ($query) => $query->orderBy('name'),
+            'participants' => fn ($query) => $query->with('department')->orderBy('name'),
+            'teams' => fn ($query) => $query->with('department')->orderBy('name'),
+            'departments' => fn ($query) => $query->orderBy('name'),
             'categories' => fn ($query) => $query->orderBy('name'),
             'categories.competitions' => fn ($query) => $query->orderBy('name'),
         ]);

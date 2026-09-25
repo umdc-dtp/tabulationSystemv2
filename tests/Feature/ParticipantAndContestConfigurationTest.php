@@ -211,7 +211,7 @@ final class ParticipantAndContestConfigurationTest extends TestCase
         $user = User::factory()->create();
         $event = Event::factory()->for($user, 'creator')->create();
         $category = $event->categories()->create(['name' => 'Team Sports']);
-        $competition = $category->competitions()->create(['name' => 'Basketball']);
+        $competition = $category->competitions()->create(['name' => 'Basketball', 'judge_count' => 3]);
         $competition->criteria()->create(['name' => 'Technique', 'max_score' => 100]);
 
         $this->actingAs($user)
@@ -244,7 +244,21 @@ final class ParticipantAndContestConfigurationTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Wins-based scoring active')
+            ->assertDontSee('Leaderboard game setup')
+            ->assertDontSee('Judge slots')
             ->assertDontSee('Define the items judges will score.');
+
+        $this->actingAs($user)
+            ->patch(route('events.categories.competitions.scoring-method.update', [$event, $category, $competition]), [
+                'scoring_method' => CompetitionScoringMethod::Criteria->value,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(3, $competition->refresh()->judge_count);
+        $this->actingAs($user)
+            ->get(route('events.categories.competitions.show', [$event, $category, $competition]))
+            ->assertSee('Leaderboard game setup')
+            ->assertSee('Judge slots');
     }
 
     public function test_criteria_cannot_be_added_to_a_wins_based_contest(): void

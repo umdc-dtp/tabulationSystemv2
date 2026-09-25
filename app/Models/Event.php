@@ -46,9 +46,19 @@ final class Event extends Model
         return $this->hasMany(Participant::class);
     }
 
+    public function teams(): HasMany
+    {
+        return $this->hasMany(EventTeam::class);
+    }
+
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class);
+    }
+
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
     }
 
     public function scoringSystemLabel(): string

@@ -7,6 +7,7 @@ namespace App\Http\Requests;
 use App\Models\Event;
 use App\Models\Participant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class UpdateParticipantRequest extends FormRequest
 {
@@ -28,6 +29,11 @@ final class UpdateParticipantRequest extends FormRequest
             'participant_reference' => ['nullable', 'string', 'max:100'],
             'participant_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_profile_picture' => ['nullable', 'boolean'],
+            'department_id' => [
+                Rule::requiredIf($this->route('event') instanceof Event && $this->route('event')->departments()->exists()),
+                'nullable', 'integer',
+                Rule::exists('departments', 'id')->where('event_id', $this->route('event') instanceof Event ? $this->route('event')->getKey() : null),
+            ],
         ];
     }
 }

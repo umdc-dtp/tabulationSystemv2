@@ -9,7 +9,10 @@ use App\Http\Requests\UpdateCompetitionScoringMethodRequest;
 use App\Models\Category;
 use App\Models\Competition;
 use App\Models\Event;
+use App\Services\CompetitionResultCalculator;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 final class CompetitionController extends Controller
@@ -31,16 +34,39 @@ final class CompetitionController extends Controller
         Event $event,
         Category $category,
         Competition $competition,
+        CompetitionResultCalculator $calculator,
     ): View {
         $competition->load([
             'criteria' => fn ($query) => $query->orderBy('name'),
             'rankScores' => fn ($query) => $query->orderBy('rank'),
+            'entries.participant.department',
+            'entries.team.department',
+            'finalizedResults.department',
         ]);
+
+        $event->load([
+            'departments' => fn ($query) => $query->orderBy('name'),
+            'participants' => fn ($query) => $query->with('department')->orderBy('name'),
+            'teams' => fn ($query) => $query->with('department')->orderBy('name'),
+        ]);
+
+        $draftPreview = null;
+        $draftPreviewError = null;
+
+        if ($competition->results_open && $competition->entries->isNotEmpty()) {
+            try {
+                $draftPreview = $calculator->preview($competition);
+            } catch (ValidationException $exception) {
+                $draftPreviewError = $exception->errors()['results'][0] ?? 'Complete all draft results to preview standings.';
+            }
+        }
 
         return view('events.competitions.show', [
             'event' => $event,
             'category' => $category,
             'competition' => $competition,
+            'draftPreview' => $draftPreview,
+            'draftPreviewError' => $draftPreviewError,
         ]);
     }
 
@@ -50,6 +76,10 @@ final class CompetitionController extends Controller
         Category $category,
         Competition $competition,
     ): RedirectResponse {
+        if ($competition->entries()->exists() || $competition->finalized_at !== null) {
+            throw ValidationException::withMessages(['scoring_method' => 'Remove entries before changing the scoring method.']);
+        }
+
         $competition->update([
             'scoring_method' => $request->validated('scoring_method'),
         ]);
@@ -59,5 +89,26 @@ final class CompetitionController extends Controller
             $category,
             $competition,
         ])->with('status', 'Contest scoring method updated successfully.');
+    }
+
+    public function updateLeaderboardSettings(
+        Request $request,
+        Event $event,
+        Category $category,
+        Competition $competition,
+    ): RedirectResponse {
+        $data = $request->validate([
+            'judge_count' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        if (($competition->entries()->exists() || $competition->finalized_at !== null)
+            && $competition->judge_count !== (int) $data['judge_count']) {
+            throw ValidationException::withMessages(['judge_count' => 'Remove entries before changing judge slots.']);
+        }
+
+        $competition->update($data);
+
+        return to_route('events.categories.competitions.show', [$event, $category, $competition])
+            ->with('status', 'Leaderboard settings updated.');
     }
 }

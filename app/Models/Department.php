@@ -6,18 +6,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class Participant extends Model
+final class Department extends Model
 {
-    protected $fillable = ['name', 'reference_no', 'profile_picture_path', 'department_id'];
+    protected $fillable = ['name'];
 
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function department(): BelongsTo
+    public function participants(): HasMany
     {
-        return $this->belongsTo(Department::class);
+        return $this->hasMany(Participant::class);
     }
 }

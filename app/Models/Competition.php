@@ -16,13 +16,16 @@ final class Competition extends Model
         'scoring_method' => 'criteria',
     ];
 
-    protected $fillable = ['name', 'scoring_method', 'non_podium_points'];
+    protected $fillable = ['name', 'scoring_method', 'non_podium_points', 'judge_count', 'results_open', 'finalized_at'];
 
     protected function casts(): array
     {
         return [
             'scoring_method' => CompetitionScoringMethod::class,
             'non_podium_points' => 'decimal:2',
+            'judge_count' => 'integer',
+            'results_open' => 'boolean',
+            'finalized_at' => 'datetime',
         ];
     }
 
@@ -44,5 +47,15 @@ final class Competition extends Model
     public function rankScores(): HasMany
     {
         return $this->hasMany(RankScore::class);
+    }
+
+    public function entries(): HasMany
+    {
+        return $this->hasMany(CompetitionEntry::class);
+    }
+
+    public function finalizedResults(): HasMany
+    {
+        return $this->hasMany(FinalizedResult::class);
     }
 }

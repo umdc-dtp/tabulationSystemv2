@@ -21,7 +21,7 @@ enum CompetitionScoringMethod: string
     {
         return match ($this) {
             self::Criteria => 'Judges score each participant using configured criteria.',
-            self::Wins => 'Standings are determined by each participant or team\'s total wins.',
+            self::Wins => 'Standings are determined by wins, then by fewer losses.',
         };
     }
 }

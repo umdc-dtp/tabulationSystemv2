@@ -30,6 +30,8 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ route('events.leaderboard.show', $event) }}" class="inline-flex h-11 items-center rounded-xl border border-white/30 px-4 text-sm font-semibold text-white hover:bg-white/10">Internal leaderboard</a>
+                <a href="{{ route('leaderboards.show', $event) }}" target="_blank" rel="noopener" class="inline-flex h-11 items-center rounded-xl border border-white/30 px-4 text-sm font-semibold text-white hover:bg-white/10">Public page</a>
                 <form method="POST" action="{{ route('events.leaderboard-freeze', $event) }}">
                     @csrf
                     @method('PATCH')
@@ -60,20 +62,51 @@
         </div>
     </section>
 
+    <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-slate-950">Departments</h3>
+            <p class="mt-1 text-sm text-slate-500">Create departments before assigning participants and recording results.</p>
+        </div>
+        <form method="POST" action="{{ route('events.departments.store', $event) }}" class="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row">
+            @csrf
+            <input name="name" value="{{ old('name') }}" required maxlength="255" placeholder="Department name" aria-label="Department name" class="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm">
+            <button class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white">Add department</button>
+        </form>
+        @error('name')<p class="px-5 py-2 text-sm text-red-600">{{ $message }}</p>@enderror
+        <div class="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+            @forelse ($event->departments as $department)
+                <form method="POST" action="{{ route('events.departments.update', [$event, $department]) }}" class="flex gap-2 rounded-xl bg-slate-50 p-3">
+                    @csrf
+                    @method('PATCH')
+                    <input name="name" value="{{ $department->name }}" required maxlength="255" aria-label="Rename {{ $department->name }}" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm">
+                    <button class="rounded-lg border border-maroon-200 px-3 text-xs font-semibold text-maroon-700">Save</button>
+                </form>
+            @empty
+                <p class="text-sm text-slate-500">No departments yet.</p>
+            @endforelse
+        </div>
+    </section>
+
     <div class="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-6 py-5">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-semibold text-slate-950">Participants</h3>
-                        <p class="mt-1 text-sm text-slate-500">Manage competitors and optional profile photos.</p>
+                        <h3 class="text-lg font-semibold text-slate-950">Participants & teams</h3>
+                        <p class="mt-1 text-sm text-slate-500">Register individuals or department teams for this event.</p>
                     </div>
-                    <span class="rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon-700">{{ $event->participants->count() }}</span>
+                    <span class="rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon-700">{{ $event->participants->count() + $event->teams->count() }}</span>
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('events.participants.store', $event) }}" enctype="multipart/form-data" class="space-y-3 border-b border-slate-200 bg-slate-50/70 p-5">
+            <div class="border-b border-slate-200 bg-slate-50/70 p-5">
+                <div class="mb-4 flex gap-2" role="group" aria-label="Registration type">
+                    <button id="register-individual-button" type="button" class="rounded-xl border border-maroon-700 bg-maroon-700 px-4 py-2 text-sm font-semibold text-white" aria-pressed="true">Individual</button>
+                    <button id="register-team-button" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" aria-pressed="false">Team</button>
+                </div>
+            <form id="register-individual-form" method="POST" action="{{ route('events.participants.store', $event) }}" enctype="multipart/form-data" class="space-y-3">
                 @csrf
+                <input type="hidden" name="registration_type" value="individual">
                 <div>
                     <label for="participant_name" class="mb-1.5 block text-xs font-semibold text-slate-600">Participant name</label>
                     <input id="participant_name" name="participant_name" type="text" value="{{ old('participant_name') }}" required class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10" placeholder="Participant name">
@@ -85,15 +118,54 @@
                     @error('participant_reference')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
+                    <label for="department_id" class="mb-1.5 block text-xs font-semibold text-slate-600">Department</label>
+                    <select id="department_id" name="department_id" @required($event->departments->isNotEmpty()) class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm">
+                        <option value="">Choose a department</option>
+                        @foreach ($event->departments as $department)
+                            <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('department_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
                     <label for="participant_image" class="mb-1.5 block text-xs font-semibold text-slate-600">Profile picture <span class="font-normal text-slate-400">(optional)</span></label>
                     <input id="participant_image" name="participant_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="block w-full rounded-xl border border-slate-300 bg-white text-sm text-slate-500 file:mr-4 file:border-0 file:bg-maroon-50 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-maroon-700 hover:file:bg-maroon-100">
                     <p class="mt-1.5 text-xs text-slate-400">JPG, PNG, or WebP up to 2 MB.</p>
                     @error('participant_image')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <button type="submit" class="h-11 w-full rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Add participant</button>
+                <button type="submit" class="h-11 w-full rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Add individual</button>
             </form>
+                <form id="register-team-form" method="POST" action="{{ route('events.teams.store', $event) }}" class="hidden space-y-3">
+                    @csrf
+                    <input type="hidden" name="registration_type" value="team">
+                    <div><label for="new_team_name" class="mb-1.5 block text-xs font-semibold text-slate-600">Team name</label><input id="new_team_name" name="team_name" value="{{ old('team_name') }}" required class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm"></div>
+                    <div><label for="new_team_department" class="mb-1.5 block text-xs font-semibold text-slate-600">Department</label><select id="new_team_department" name="department_id" required class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm"><option value="">Choose a department</option>@foreach ($event->departments as $department)<option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>@endforeach</select></div>
+                    <div><label for="new_team_members" class="mb-1.5 block text-xs font-semibold text-slate-600">Team members (one name per line)</label><textarea id="new_team_members" name="member_names" rows="5" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm">{{ old('member_names') }}</textarea></div>
+                    <button type="submit" class="h-11 w-full rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Add team</button>
+                </form>
+            </div>
+            <script>
+                (() => {
+                    const individualButton = document.getElementById('register-individual-button');
+                    const teamButton = document.getElementById('register-team-button');
+                    const individualForm = document.getElementById('register-individual-form');
+                    const teamForm = document.getElementById('register-team-form');
+                    function choose(type) {
+                        const isTeam = type === 'team';
+                        individualForm.classList.toggle('hidden', isTeam);
+                        teamForm.classList.toggle('hidden', !isTeam);
+                        individualButton.setAttribute('aria-pressed', String(!isTeam));
+                        teamButton.setAttribute('aria-pressed', String(isTeam));
+                        individualButton.className = isTeam ? 'rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700' : 'rounded-xl border border-maroon-700 bg-maroon-700 px-4 py-2 text-sm font-semibold text-white';
+                        teamButton.className = isTeam ? 'rounded-xl border border-maroon-700 bg-maroon-700 px-4 py-2 text-sm font-semibold text-white' : 'rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700';
+                    }
+                    individualButton.addEventListener('click', () => choose('individual'));
+                    teamButton.addEventListener('click', () => choose('team'));
+                    choose(@json(old('registration_type', 'individual')));
+                })();
+            </script>
 
-            <div class="divide-y divide-slate-100">
+            <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-maroon-600" role="region" aria-label="Registered individual participants" tabindex="0">
                 @forelse ($event->participants as $participant)
                     <article class="px-5 py-5">
                         <div class="flex items-start gap-3">
@@ -105,7 +177,7 @@
 
                             <div class="min-w-0 flex-1 pt-1">
                                 <p class="truncate text-sm font-semibold text-slate-900">{{ $participant->name }}</p>
-                                <p class="mt-0.5 text-xs text-slate-400">{{ $participant->reference_no ?: 'No reference number' }}</p>
+                                <p class="mt-0.5 text-xs text-slate-400">{{ $participant->department?->name ?? 'Department unassigned' }} · {{ $participant->reference_no ?: 'No reference number' }}</p>
                             </div>
 
                             <form method="POST" action="{{ route('events.participants.destroy', [$event, $participant]) }}" onsubmit="return confirm('Delete this participant? This action cannot be undone.')">
@@ -140,6 +212,15 @@
                                     <input id="participant_reference_{{ $participant->id }}" name="participant_reference" type="text" value="{{ $participant->reference_no }}" class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10">
                                 </div>
                                 <div>
+                                    <label for="department_id_{{ $participant->id }}" class="mb-1 block text-xs font-semibold text-slate-600">Department</label>
+                                    <select id="department_id_{{ $participant->id }}" name="department_id" @required($event->departments->isNotEmpty()) class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm">
+                                        <option value="">Unassigned</option>
+                                        @foreach ($event->departments as $department)
+                                            <option value="{{ $department->id }}" @selected($participant->department_id === $department->id)>{{ $department->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
                                     <label for="participant_image_{{ $participant->id }}" class="mb-1 block text-xs font-semibold text-slate-600">Replace profile picture</label>
                                     <input id="participant_image_{{ $participant->id }}" name="participant_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="block w-full text-xs text-slate-500">
                                 </div>
@@ -157,9 +238,40 @@
                     <p class="px-6 py-10 text-center text-sm text-slate-400">No participants have been added.</p>
                 @endforelse
             </div>
+            <div class="border-t border-slate-200 px-5 py-4"><h4 class="text-sm font-semibold text-slate-900">Registered teams</h4></div>
+            <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-maroon-600" role="region" aria-label="Registered teams" tabindex="0">
+                @forelse ($event->teams as $team)
+                    <article class="px-5 py-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-semibold text-slate-900">{{ $team->name }}</p>
+                                <p class="text-xs text-slate-500">{{ $team->department->name }} · {{ implode(', ', $team->member_names) }}</p>
+                            </div>
+                            <form method="POST" action="{{ route('events.teams.destroy', [$event, $team]) }}" onsubmit="return confirm('Delete this team and withdraw its results from every game?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="text-xs font-semibold text-red-600">Delete</button>
+                            </form>
+                        </div>
+                        <details class="mt-3">
+                            <summary class="cursor-pointer text-xs font-semibold text-maroon-700">Edit team</summary>
+                            <form method="POST" action="{{ route('events.teams.update', [$event, $team]) }}" class="mt-3 space-y-3 rounded-xl bg-slate-50 p-4">
+                                @csrf
+                                @method('PATCH')
+                                <div><label for="registered_team_name_{{ $team->id }}" class="mb-1 block text-xs font-semibold text-slate-600">Team name</label><input id="registered_team_name_{{ $team->id }}" name="team_name" value="{{ $team->name }}" required class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"></div>
+                                <div><label for="registered_team_department_{{ $team->id }}" class="mb-1 block text-xs font-semibold text-slate-600">Department</label><select id="registered_team_department_{{ $team->id }}" name="department_id" required class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">@foreach ($event->departments as $department)<option value="{{ $department->id }}" @selected($team->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select></div>
+                                <div><label for="registered_team_members_{{ $team->id }}" class="mb-1 block text-xs font-semibold text-slate-600">Team members (one name per line)</label><textarea id="registered_team_members_{{ $team->id }}" name="member_names" rows="5" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ implode("\n", $team->member_names) }}</textarea></div>
+                                <button class="h-10 w-full rounded-lg bg-maroon-700 px-4 text-sm font-semibold text-white">Save team</button>
+                            </form>
+                        </details>
+                    </article>
+                @empty
+                    <p class="px-5 py-6 text-sm text-slate-400">No teams registered yet.</p>
+                @endforelse
+            </div>
         </section>
 
-        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm xl:grid xl:h-0 xl:min-h-full xl:grid-rows-[auto_auto_minmax(0,1fr)]">
             <div class="border-b border-slate-200 px-6 py-5">
                 <div class="flex items-center justify-between gap-4">
                     <div>
@@ -180,7 +292,7 @@
                 <button type="submit" class="h-11 rounded-xl bg-maroon-700 px-5 text-sm font-semibold text-white transition hover:bg-maroon-800">Add category</button>
             </form>
 
-            <div class="space-y-4 p-5">
+            <div class="max-h-80 space-y-4 overflow-y-auto overscroll-contain p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-maroon-600 xl:max-h-none xl:min-h-0" role="region" aria-label="Categories and contests" tabindex="0">
                 @forelse ($event->categories as $category)
                     <article class="rounded-xl border border-slate-200">
                         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
